@@ -9,7 +9,34 @@ const dl = (pairs) => h('dl', { class: 'kv' },
 
 const list = (items) => (items.length ? h('ul', {}, items.map((i) => h('li', {}, i))) : h('p', { class: 'muted' }, 'None'));
 
-export function renderAssumptions(el, plan) {
+// Tax table summary: which tables, how indexed, cited sources (links open in a new tab).
+function taxSection(plan, taxTables) {
+  if (!taxTables) return [h('p', { class: 'muted' }, 'Taxes are not included in this projection.')];
+  const { federal, state, rmd } = taxTables;
+  const link = (s) => h('li', {}, h('a', { href: s.url, target: '_blank', rel: 'noopener noreferrer' }, s.title));
+  const infl = pct(plan.assumptions.inflation);
+  return [
+    dl([
+      ['Federal', `${federal.year} brackets and deductions (IRS), thresholds grown ${infl}/yr after ${federal.year}`],
+      ['State', state ? `${state.jurisdiction} ${state.year} schedules (latest published), grown ${infl}/yr after ${state.year}` : `No table for ${plan.assumptions.state}; federal only`],
+      ['Payroll', 'Social Security and Medicare tax on wages' + (state?.payroll?.sdi ? `; ${state.jurisdiction} SDI ${pct(state.payroll.sdi.rate)}` : '')],
+      ['Required withdrawals', `From age ${rmd.start_age.map((x) => x.age).slice(1).join(' or ')} (by birth year), IRS Uniform Lifetime Table`],
+    ]),
+    list([
+      'Filing jointly while both are alive (including the year of the first death), then single.',
+      'Withdrawals are grossed up so that after-tax cash covers spending; taxes are paid in the same year.',
+      'Dividends are treated as qualified; sales from taxable accounts realize gains in proportion to cost basis.',
+      'Savings-account interest is taxed each year. Roth withdrawals are tax-free.',
+      'Traditional withdrawals before 59½ pay the 10% federal penalty' + (state ? ` and ${pct(state.early_withdrawal_penalty.rate)} state tax` : '') + '.',
+      'Not modeled: itemized deductions, AMT, tax credits, net investment income tax, Medicare IRMAA surcharges, ACA premium credits, Roth conversions'
+        + (state?.jurisdiction === 'CA' ? ", California's HSA rules and exemption-credit phase-out" : '') + '.',
+    ]),
+    h('details', { class: 'sources' }, h('summary', {}, 'Sources for the tax figures'),
+      h('ul', {}, [federal, state, rmd].filter(Boolean).flatMap((t) => t.sources.map(link)))),
+  ];
+}
+
+export function renderAssumptions(el, plan, taxTables) {
   const nameOf = (id) => firstName(plan.people.find((p) => p.id === id)?.name ?? id);
   const acctName = (id) => plan.accounts.find((a) => a.id === id)?.name ?? id;
   const A = plan.assumptions;
@@ -55,6 +82,9 @@ export function renderAssumptions(el, plan) {
     list(plan.accounts.map((a) => `${a.name} (${TYPE_LABELS[a.type]}, ${a.owner === 'joint' ? 'joint' : nameOf(a.owner)}): ${money(a.balance)}, return ${pct(a.return)}`
       + (a.type === 'taxable' ? `, dividends ${pct(a.dividendYield)}, cost basis ${money(a.costBasis)}` : ''))),
 
+    h('h3', {}, 'Taxes'),
+    ...taxSection(plan, taxTables),
+
     h('h3', {}, 'How the projection works'),
     list([
       "Each year: income − money saved from pay − spending − loan payments − taxes. A surplus goes to the surplus account; a gap is withdrawn in the order above.",
@@ -63,7 +93,6 @@ export function renderAssumptions(el, plan) {
       "\"Today's dollars\" means January " + plan.startYear + ' dollars.',
       'Healthcare while working is assumed covered by the employer (premiums inside everyday spending).',
       'After a death, the survivor keeps the larger Social Security benefit; spending drops to the survivor percentage the following year.',
-      'Taxes are not modeled yet.',
     ]),
   );
 }

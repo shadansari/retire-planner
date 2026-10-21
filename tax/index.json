@@ -1,0 +1,8 @@
+{
+  "notes": "Which table file the page loads. Add a state by adding tax/states/<st>-<year>.json and an entry here.",
+  "federal": "federal-2026.json",
+  "rmd": "rmd.json",
+  "states": {
+    "CA": "states/ca-2025.json"
+  }
+}

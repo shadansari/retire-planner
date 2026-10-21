@@ -165,3 +165,10 @@ test('computeTaxes: totals add up; early-withdrawal penalties federal 10% + CA 2
   close(t.total, t.federal.total + t.state.total + t.payroll.total);
   assert.deepEqual(t.other, { niit: 0, irmaa: 0 });
 });
+
+test('tax/index.json manifest points at existing, well-formed tables', () => {
+  const idx = json('index.json');
+  assert.equal(json(idx.federal).jurisdiction, 'federal');
+  assert.ok(json(idx.rmd).uniform_lifetime);
+  for (const [code, file] of Object.entries(idx.states)) assert.equal(json(file).jurisdiction, code);
+});

@@ -87,11 +87,9 @@ button:hover, .file-btn:hover { border-color: var(--axis); }
 .warnings { background: var(--warn-bg); }
 .errors ul, .warnings ul { margin: 0; padding-left: 1.2rem; }
 .errors li, .warnings li { margin: 4px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.notice {
-  margin: 16px 0 0; padding: 8px 12px; border-radius: 8px;
-  background: var(--warn-bg); color: var(--ink); font-size: 0.9rem;
-}
 .muted { color: var(--muted); }
+.note { margin: 12px 0 0; color: var(--ink-2); font-size: 0.85rem; }
+#assumptions a { color: var(--accent); }
 
 /* Summary */
 .summary { margin-top: 16px; }
@@ -108,8 +106,7 @@ button:hover, .file-btn:hover { border-color: var(--axis); }
 }
 .ok .status-icon { background: var(--good-mark); }
 .bad .status-icon { background: var(--critical); }
-.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
-@media (min-width: 720px) { .tiles { grid-template-columns: repeat(4, 1fr); } }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
 .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; min-width: 0; }
 .tile-label { color: var(--ink-2); font-size: 0.85rem; }
 .tile-value { font-size: 1.25rem; font-weight: 600; margin-top: 2px; }

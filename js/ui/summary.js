@@ -46,7 +46,8 @@ export function renderSummary(el, plan, result, mode) {
     h('div', { class: 'tiles' },
       tile('Savings now', money(summary.startBalance), `as of statements, ${plan.asOf.year}-${String(plan.asOf.month).padStart(2, '0')}`),
       tile(`End of ${atRetire.year}`, money(atRetire[mode].balances.total), 'year both are retired'),
-      tile('Lowest after retiring', money(lowest[mode].balances.total), `in ${lowest.year}`),
-      tile(`End of ${end.year}`, money(end[mode].balances.total), 'end of plan')),
+      lowest.year !== end.year ? tile('Lowest after retiring', money(lowest[mode].balances.total), `in ${lowest.year}`) : null,
+      tile(`End of ${end.year}`, money(end[mode].balances.total), 'end of plan'),
+      summary.taxesModeled ? tile('Lifetime taxes', money(summary.totalTaxes[mode]), `${summary.startYear}–${summary.endYear}`) : null),
   );
 }

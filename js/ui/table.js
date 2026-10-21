@@ -9,7 +9,12 @@ const COLUMNS = [
   ['Spending', (m) => m.spending.total, (m) => [
     ['Everyday', m.spending.base], ['Extras', m.spending.items], ['Healthcare', m.spending.healthcare]]],
   ['Debt', (m) => m.debt.payment, (m) => [['Interest', m.debt.interest], ['Balance left', m.debt.balance]]],
-  ['Taxes', (m) => m.taxes.total],
+  ['Taxes', (m) => m.taxes.total, (m) => (m.taxes.federal ? [
+    ['Federal income tax', m.taxes.federal.income], ['Federal early-withdrawal penalty', m.taxes.federal.penalty],
+    ['State income tax', m.taxes.state.income], ['State early-withdrawal tax', m.taxes.state.penalty],
+    ['Social Security tax', m.taxes.payroll.socialSecurity], ['Medicare tax', m.taxes.payroll.medicare + m.taxes.payroll.additionalMedicare],
+    ['State disability (SDI)', m.taxes.payroll.stateDisability],
+    ['Federal taxable income (for reference)', m.taxes.details.taxableIncome]] : [])],
   ['Net', (m) => m.net],
   ['Withdrawn', (m) => m.withdrawals.total],
   ['Shortfall', (m) => m.shortfall],
@@ -39,7 +44,10 @@ export function renderTable(el, noteEl, plan, result, mode) {
     const ages = plan.people.map((p) => y.ages[p.id] ?? '—').join(' / ');
     const cells = cols.map(([name, get, parts]) => {
       let title = parts ? breakdown(parts(m)) : '';
-      if (name === 'Withdrawn') title = breakdown(Object.entries(m.withdrawals.byAccount), accountName);
+      if (name === 'Withdrawn') {
+        title = breakdown(Object.entries(m.withdrawals.byAccount), accountName);
+        if (m.rmd > 0.5) title += `\nincludes required (RMD): ${money(m.rmd)}`;
+      }
       const v = get(m);
       return h('td', { class: `num${v < -0.5 ? ' neg' : ''}`, title: title || null }, money(v));
     });

@@ -131,25 +131,43 @@ Every new schema field needs a validation rule and an invalid-fixture test.
 - **Real vs nominal**: engine emits both for every money field.
   `real = nominal / (1 + inflation)^(year − start_year)`.
 
-## Taxes (M2)
+## Taxes (M2, done 2026-10-20)
 
 - Target "within a few percent of reality", not filing-grade.
-- Tables are JSON data, not code: `tax/federal-2026.json`, `tax/states/<st>-2026.json`.
-  Each has `sources: [{title, url}]`. **Look figures up from IRS/state primary sources;
-  never from memory.**
-- Each threshold flagged `indexed: true|false` (SS provisional-income thresholds and NIIT
-  thresholds are NOT indexed). Indexed values inflate by `assumptions.inflation` after the
-  table year. `provisions: [{id, start_year, end_year, ...}]` for temporary rules (e.g. the
-  senior deduction through 2028).
-- Model: payroll (SS wage base, Medicare, additional Medicare); federal ordinary brackets +
-  standard deduction + 65+ add-on; LTCG/qualified dividends stacked on ordinary; SS
-  taxable portion (0/50/85% via provisional income); state tax (brackets/flat, SS exemption
-  flag, retirement exclusion); 10% early-withdrawal penalty before 59½ (with warning).
-- RMDs implemented (start age 73 or 75 by birth year, Uniform Lifetime Table as data).
-- NIIT and IRMAA: hooks only (`tax/hooks.js` beforeTax/afterTax per year), no-op stubs.
-- Gross-up: bisection on gross withdrawal (monotone, guaranteed convergence), $1 tolerance,
-  ≤ 50 iterations.
-- Out of scope v1: itemized deductions, AMT, ACA credits, Roth conversions.
+- Tables are JSON data, not code. `tax/index.json` is the manifest the page reads
+  (federal file, rmd file, state code → file). Current: `federal-2026.json`,
+  `states/ca-2025.json`, `rmd.json`. Each has `sources: [{title, url}]`.
+  **Look figures up from IRS/state primary sources, never memory; read the PDF/page
+  itself** (WebFetch often can't parse IRS PDFs: download and extract text with pypdf
+  in a scratch venv; FTB/SSA block WebFetch, curl with a browser UA usually works).
+- CA uses 2025 because FTB hadn't published 2026 indexing (Oct 2026) and its own 2026
+  540-ES instructions say to use 2025 figures. When FTB publishes (late Dec), add
+  `ca-2026.json`, point the manifest at it, update goldens.
+- Each section has `indexed: true|false`. Indexed dollar thresholds inflate by
+  `assumptions.inflation` from the table year (`tax/tables.js`); rates never inflate.
+  Statutory, not indexed: SS taxation thresholds (32k/44k, 25k/34k), Additional Medicare
+  and NIIT thresholds, $3k loss limit, senior deduction, CA 1% surtax threshold.
+  `provisions: [{id, start_year, end_year, ...}]` for temporary rules (senior deduction
+  2025–2028, $6,000 per person 65+, 6% phase-out applied per person per Schedule 1-A).
+- Modules (`js/engine/tax/`): `tables` (resolve year/status), `federal` (brackets,
+  Pub. 915 SS taxation, std + 65+ + senior deduction, LTCG/qualified-dividend stacking,
+  $3k loss cap), `state` (data-driven; CA-shaped: SS exempt, gains as ordinary, exemption
+  credits, surtax), `payroll` (OASDI per-person wage base, Medicare, Additional Medicare
+  on combined wages, state SDI), `rmd`, `hooks` (NIIT, IRMAA stubs returning 0), `index`
+  (`computeTaxes(ctx, tables)`).
+- `simulate(plan, { taxTables: { federal, state, rmd } })`; without `taxTables` the run
+  is tax- and RMD-free (M1 tests and golden rely on this).
+- Year flow with taxes: RMDs (start-of-year balance / divisor; start age 73 if born
+  1951–59, 75 if 1960+) → contributions → outflows → bisection on the gross voluntary
+  withdrawal (trial on a copy of accounts) until after-tax cash ≥ gap (±$0.50; leftover
+  deposited as surplus). Taxes paid in the same year.
+- Modeling choices: filing joint through the year of first death, then single; deceased
+  spouse's accounts roll to the survivor (RMDs and 59½ test by survivor's age);
+  dividends qualified; cash interest taxed annually; HSA withdrawals tax-free up to that
+  year's healthcare spending; traditional withdrawals "early" if 59½ not reached by Dec 31
+  (10% federal + CA 2.5%); 401(k)/HSA deferrals reduce income-tax wages, not payroll wages.
+- Out of scope v1: itemized deductions, AMT, credits, ACA credits, Roth conversions, CA
+  exemption-credit phase-out and HSA non-conformity, NIIT/IRMAA (hooks only).
 
 ## Milestones
 
@@ -158,8 +176,9 @@ Every new schema field needs a validation rule and an invalid-fixture test.
   index.html + CSP, summary/table/nominal-real toggle, SVG chart, assumptions panel,
   mobile pass, tests. Done when `npm test` is green, demo loads with zero CSP violations,
   usable at 375px width.
-- **M2 — taxes**: tables with sources, tax modules, gross-up, RMDs, hooks, tax columns, tests
-  against worked examples.
+- **M2 — taxes** (done 2026-10-20): tables with sources, tax modules, gross-up, RMDs, hooks,
+  tax breakdown in table/summary/assumptions, tests against published bracket amounts and
+  worked examples.
 - **M3 — GitHub**: connect form, token handling, error scrubbing, Pages deploy, security
   review, plain-language guide for editing plan.yaml.
 - **Later**: Roth conversions, NIIT/IRMAA real, ACA, scenario comparison, Monte Carlo, CSV export.
