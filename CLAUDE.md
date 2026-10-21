@@ -179,8 +179,14 @@ Every new schema field needs a validation rule and an invalid-fixture test.
 - **M2 — taxes** (done 2026-10-20): tables with sources, tax modules, gross-up, RMDs, hooks,
   tax breakdown in table/summary/assumptions, tests against published bracket amounts and
   worked examples.
-- **M3 — GitHub**: connect form, token handling, error scrubbing, Pages deploy, security
-  review, plain-language guide for editing plan.yaml.
+- **M3 — GitHub** (code done 2026-10-20): `js/data/github.js` (contents API, friendly
+  errors, token scrubbing; fetch injectable for tests), connect form in `index.html`/`app.js`
+  (token in memory; sessionStorage only if "remember" ticked AND GitHub accepted it;
+  owner/repo/path in localStorage; auto-load on tab reload), frame-busting,
+  `docs/github-token.md` (setup), `docs/editing-plan.md` (plain-language guide for
+  editing plan.yaml), `docs/security.md` (threat model + deploy checklist),
+  `test/security.test.js` (CSP, sinks, storage, vendor checksum, gitignore).
+  Public repo: `shadansari/retire-planner`, GitHub Pages from `main` / root, `.nojekyll`.
 - **Later**: Roth conversions, NIIT/IRMAA real, ACA, scenario comparison, Monte Carlo, CSV export.
 
 ## Testing

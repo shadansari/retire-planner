@@ -9,6 +9,12 @@ import { renderTable } from './ui/table.js';
 import { renderChart } from './ui/chart.js';
 import { renderAssumptions } from './ui/assumptions.js';
 
+// Refuse to run inside a frame (GitHub Pages can't send frame-ancestors / X-Frame-Options).
+if (window.top !== window.self) {
+  document.body.replaceChildren(document.createTextNode('This page must be opened directly, not inside another site.'));
+  throw new Error('framed');
+}
+
 const $ = (id) => document.getElementById(id);
 const state = { plan: null, result: null, mode: 'real', taxTables: null };
 
