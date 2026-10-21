@@ -52,7 +52,26 @@ examples/example.yaml
 test/*.test.js, test/helpers.js
 ```
 
-Local run: `python3 -m http.server` (ES modules need http, not file://). Tests: `npm test`.
+Local run: `python3 -m http.server` (ES modules need http, not file://), then open
+`/?demo` to auto-load the example. Tests: `npm test`.
+
+Page check (dev only, not served logic): `node tools/check-page.mjs <url> <width> <out.png> [dark]`
+drives headless Chrome over DevTools with true device emulation; prints page scrollWidth
+(must equal width → no horizontal scroll) and every console/CSP message (must be none),
+and saves a screenshot. Use it at 375 (phone), ~1280, and dark before calling UI work done.
+Note: plain `chrome --headless --window-size=375,…` can't go below ~500px, so its
+screenshots look cropped; use the tool.
+
+UI notes:
+- "Open local file…" reads a YAML file with FileReader (nothing uploaded) so plan edits
+  can be previewed before pushing to the private repo.
+- All plan-derived text goes into the DOM via textContent (`js/ui/dom.js` `h()`/`s()`);
+  never innerHTML. Pass arrays to `replaceChildren` spread (`...arr`), it doesn't flatten.
+- Chart colors: validated 5-slot categorical palette (dataviz skill), fixed per account
+  type (cash, taxable, traditional, roth, hsa → slots 1–5) in light and dark. Light-mode
+  contrast < 3:1 for 3 slots is relieved by the legend + table view; keep both.
+- Element positioning from JS uses `el.style.*` (CSSOM, allowed by CSP); never
+  `setAttribute('style', …)` or inline `style=` (blocked).
 
 ## Schema v1 conventions (plan.yaml)
 
@@ -134,7 +153,7 @@ Every new schema field needs a validation rule and an invalid-fixture test.
 
 ## Milestones
 
-- **M1 — demo mode, no taxes**: skeleton, vendored js-yaml, example.yaml, validate/normalize,
+- **M1 — demo mode, no taxes** (done 2026-10-20): skeleton, vendored js-yaml, example.yaml, validate/normalize,
   engine (timeline, income, expenses, amortization, accounts/withdrawals, simulate),
   index.html + CSP, summary/table/nominal-real toggle, SVG chart, assumptions panel,
   mobile pass, tests. Done when `npm test` is green, demo loads with zero CSP violations,

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="data:,">
+  <title>Retirement Cash Flow</title>
+  <link rel="stylesheet" href="css/app.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="top">
+    <h1>Retirement cash flow</h1>
+    <div class="controls">
+      <button type="button" id="load-demo">Load demo</button>
+      <label class="file-btn">Open local file…
+        <input type="file" id="load-file" accept=".yaml,.yml,text/yaml">
+      </label>
+      <fieldset class="seg" id="dollars" aria-label="Dollar basis">
+        <label><input type="radio" name="dollars" value="real" checked> Today's $</label>
+        <label><input type="radio" name="dollars" value="nominal"> Future $</label>
+      </fieldset>
+    </div>
+  </header>
+
+  <main>
+    <p id="source" class="source" hidden></p>
+    <section id="errors" class="panel errors" hidden aria-live="polite"></section>
+    <section id="warnings" class="panel warnings" hidden></section>
+    <p id="empty" class="empty">Load the demo or open a plan file to see the projection.</p>
+
+    <div id="results" hidden>
+      <p class="notice" role="note"><strong>Taxes are not modeled yet.</strong> These results are optimistic until tax support is added.</p>
+      <section id="summary" class="summary" aria-label="Summary"></section>
+      <section class="panel">
+        <h2>Savings by account type</h2>
+        <div id="chart" class="chart"></div>
+      </section>
+      <section class="panel">
+        <h2>Year by year</h2>
+        <p id="table-note" class="caption"></p>
+        <div id="table" class="table-wrap" tabindex="0"></div>
+      </section>
+      <section class="panel">
+        <details id="assumptions-wrap">
+          <summary><h2>Assumptions in use</h2></summary>
+          <div id="assumptions"></div>
+        </details>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
