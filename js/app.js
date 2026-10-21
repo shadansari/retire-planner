@@ -1,6 +1,7 @@
 // Entry point: wiring only. Loading → validation → simulate → render.
 
 import { parsePlanText } from './data/load.js';
+import { fetchPlanText, scrub } from './data/github.js';
 import { simulate } from './engine/simulate.js';
 import { h } from './ui/dom.js';
 import { renderSummary } from './ui/summary.js';
@@ -49,17 +50,20 @@ function render() {
   renderTable($('table'), $('table-note'), plan, result, mode);
 }
 
-async function loadText(text, sourceLabel) {
+// Returns true if the plan rendered.
+async function loadText(text, sourceLabel, { reload = false } = {}) {
   const { errors, warnings, plan } = parsePlanText(text);
   $('source').hidden = false;
-  $('source').textContent = `Loaded: ${sourceLabel}`;
+  $('source').replaceChildren(`Loaded: ${sourceLabel}`,
+    reload ? h('button', { type: 'button', id: 'reload' }, 'Reload') : null);
+  if (reload) $('reload').addEventListener('click', loadFromGitHub);
   $('empty').hidden = true;
   showMessages($('errors'), `The plan file has ${errors.length === 1 ? 'a problem' : `${errors.length} problems`} to fix`, errors);
   showMessages($('warnings'), errors.length ? 'Also worth checking' : 'Warnings (the projection still ran)', warnings);
   if (errors.length) {
     state.plan = null;
     $('results').hidden = true;
-    return;
+    return false;
   }
   let taxTables;
   try {
@@ -69,7 +73,7 @@ async function loadText(text, sourceLabel) {
   } catch (e) {
     showMessages($('errors'), "Couldn't load the tax tables", [String(e.message)]);
     $('results').hidden = true;
-    return;
+    return false;
   }
   state.plan = plan;
   state.taxTables = taxTables;
@@ -77,7 +81,70 @@ async function loadText(text, sourceLabel) {
   $('results').hidden = false;
   renderAssumptions($('assumptions'), plan, taxTables);
   render();
+  return true;
 }
+
+// --- GitHub connection ------------------------------------------------------------
+// Token: module variable; sessionStorage only if "remember" is ticked. Never
+// localStorage, never logged, never in a URL. Location (no token) → localStorage.
+const TOKEN_KEY = 'retire.token';
+const LOC_KEY = 'retire.location';
+const store = (area, fn) => { try { return fn(window[area]); } catch { return null; } };
+let token = store('sessionStorage', (s) => s.getItem(TOKEN_KEY)) || '';
+
+function readLocation() {
+  return { owner: $('gh-owner').value.trim(), repo: $('gh-repo').value.trim(), path: $('gh-path').value.trim() };
+}
+
+function showTokenStatus(msg) {
+  $('gh-status').textContent = msg ?? (token ? 'Token remembered for this tab.' : '');
+}
+
+async function loadFromGitHub() {
+  const typed = $('gh-token').value.trim();
+  if (typed) token = typed;
+  $('gh-token').value = ''; // don't leave it sitting in the field
+  const loc = readLocation();
+  store('localStorage', (s) => s.setItem(LOC_KEY, JSON.stringify(loc)));
+  showTokenStatus('Loading…');
+  $('gh-load').disabled = true;
+  try {
+    const text = await fetchPlanText({ ...loc, token });
+    // Remember only a token GitHub accepted, and only if asked.
+    if ($('gh-remember').checked) store('sessionStorage', (s) => s.setItem(TOKEN_KEY, token));
+    else store('sessionStorage', (s) => s.removeItem(TOKEN_KEY));
+    const ok = await loadText(text, `${loc.owner}/${loc.repo}/${loc.path} (from GitHub)`, { reload: true });
+    if (ok) $('connect-wrap').open = false;
+    showTokenStatus();
+  } catch (e) {
+    showTokenStatus('');
+    showMessages($('errors'), "Couldn't load the plan from GitHub", [scrub(e.message, token)]);
+  } finally {
+    $('gh-load').disabled = false;
+  }
+}
+
+$('connect-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  loadFromGitHub();
+});
+
+$('gh-forget').addEventListener('click', () => {
+  token = '';
+  $('gh-token').value = '';
+  $('gh-remember').checked = false;
+  store('sessionStorage', (s) => s.removeItem(TOKEN_KEY));
+  showTokenStatus('Token forgotten.');
+});
+
+const savedLoc = store('localStorage', (s) => JSON.parse(s.getItem(LOC_KEY) || 'null'));
+if (savedLoc) {
+  $('gh-owner').value = savedLoc.owner ?? '';
+  $('gh-repo').value = savedLoc.repo ?? '';
+  $('gh-path').value = savedLoc.path || 'plan.yaml';
+}
+$('gh-remember').checked = Boolean(token);
+showTokenStatus();
 
 async function loadDemo() {
   try {
@@ -113,3 +180,4 @@ new ResizeObserver(([entry]) => {
 }).observe($('chart'));
 
 if (new URLSearchParams(location.search).has('demo')) loadDemo();
+else if (token && savedLoc) loadFromGitHub(); // tab reload with a remembered token

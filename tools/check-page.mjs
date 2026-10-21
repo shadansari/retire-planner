@@ -1,7 +1,8 @@
 // Dev tool (not part of the page): load a URL in headless Chrome via DevTools protocol,
 // report horizontal overflow + console/CSP messages, save a full-page screenshot.
 //   node tools/check-page.mjs <url> <width> <out.png> [dark]
-// Env: CHROME=<path> (default macOS Chrome), EVAL=<js expr to print>, H=<max height px>.
+// Env: CHROME=<path> (default macOS Chrome), EVAL=<js expr to print>, WAIT=<ms after EVAL>,
+//      AFTER=<js expr to print after WAIT>, H=<max height px>.
 import { spawn } from 'node:child_process';
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -33,6 +34,8 @@ await new Promise((r) => setTimeout(r, 2500));
 const ev = async (expr) => (await send('Runtime.evaluate', { expression: expr, returnByValue: true })).result.result.value;
 console.log('scrollWidth', await ev('document.documentElement.scrollWidth'), 'clientWidth', await ev('document.documentElement.clientWidth'));
 if (process.env.EVAL) console.log('eval:', JSON.stringify(await ev(process.env.EVAL)));
+if (process.env.WAIT) await new Promise((r) => setTimeout(r, +process.env.WAIT));
+if (process.env.AFTER) console.log('after:', JSON.stringify(await ev(process.env.AFTER)));
 const h = await ev('document.documentElement.scrollHeight');
 await send('Emulation.setDeviceMetricsOverride', { width: +width, height: Math.min(h, +(process.env.H || h)), deviceScaleFactor: 1, mobile: +width < 600 });
 const shot = await send('Page.captureScreenshot', { format: 'png' });

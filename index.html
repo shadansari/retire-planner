@@ -26,10 +26,30 @@
   </header>
 
   <main>
+    <details id="connect-wrap" class="panel connect" open>
+      <summary><h2>Load our plan from GitHub</h2></summary>
+      <form id="connect-form" autocomplete="off" novalidate>
+        <div class="fields">
+          <label>Owner <input id="gh-owner" required spellcheck="false" autocapitalize="off" placeholder="alexsample"></label>
+          <label>Repository <input id="gh-repo" required spellcheck="false" autocapitalize="off" placeholder="our-plan"></label>
+          <label>File path <input id="gh-path" required spellcheck="false" autocapitalize="off" value="plan.yaml"></label>
+          <label class="wide">GitHub token <input id="gh-token" type="password" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="github_pat_…"></label>
+        </div>
+        <label class="check"><input type="checkbox" id="gh-remember"> Remember the token until this tab is closed</label>
+        <div class="actions">
+          <button type="submit" id="gh-load" class="primary">Load plan</button>
+          <button type="button" id="gh-forget">Forget token</button>
+          <span id="gh-status" class="muted" role="status"></span>
+        </div>
+        <p class="hint">The token stays in this browser tab and is sent only to api.github.com. It needs read-only access to one repository —
+          <a href="https://github.com/shadansari/retire-planner/blob/main/docs/github-token.md" target="_blank" rel="noopener noreferrer">how to create one</a>.</p>
+      </form>
+    </details>
+
     <p id="source" class="source" hidden></p>
     <section id="errors" class="panel errors" hidden aria-live="polite"></section>
     <section id="warnings" class="panel warnings" hidden></section>
-    <p id="empty" class="empty">Load the demo or open a plan file to see the projection.</p>
+    <p id="empty" class="empty">Load your plan from GitHub, open a local plan file, or try the demo (made-up data).</p>
 
     <div id="results" hidden>
       <p class="note" role="note">Taxes are estimated (federal, state, payroll), aiming for within a few percent of reality, not filing-grade. Details under “Assumptions in use”.</p>
