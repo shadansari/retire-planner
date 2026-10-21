@@ -1,0 +1,149 @@
+# EXAMPLE PLAN — all names and numbers are made up.
+#
+# Editing tips:
+#   - Percentages are written with a % sign:   return: 6%
+#   - Dollar amounts are plain numbers:         balance: 250000   ("$250,000" also works)
+#   - Months are written year-month:            2032-06
+#   - Indentation matters: use spaces, never tabs.
+#   - Lines starting with # are notes and are ignored.
+
+schema_version: 1
+
+# The month the account balances below were read from statements.
+# The projection starts on January 1 of the following year.
+as_of: 2026-10
+
+people:
+  - id: alex                  # short nickname used to refer to this person below
+    name: Alex Sample
+    birth_date: 1968-04-15
+    retirement_date: 2032-06  # first month NOT working
+    life_expectancy: 92       # plan as if alive through the end of the year of this age
+  - id: jamie
+    name: Jamie Sample
+    birth_date: 1970-09-01
+    retirement_date: 2033-01
+    life_expectancy: 95
+
+income:
+  salaries:
+    - owner: alex
+      amount: 140000          # current yearly salary, before tax
+      growth: 3%              # yearly raise
+      end: retirement         # or the last month paid, e.g. 2031-12
+      contributions:          # paycheck savings into a 401k (optional)
+        - account: alex_401k
+          employee: 10%       # of salary (or a dollar amount per year)
+          employer: 4%        # company match
+    - owner: jamie
+      amount: 90000
+      growth: 2.5%
+      contributions:
+        - account: jamie_roth401k
+          employee: 8%
+          employer: 3%
+
+  social_security:
+    # Monthly benefit at the claim age, in today's dollars (from ssa.gov statement).
+    - owner: alex
+      claim_age: 67
+      monthly_benefit: 3300
+    - owner: jamie
+      claim_age: 66
+      claim_months: 6         # optional: claim at 66 and 6 months
+      monthly_benefit: 2100
+
+  pensions:
+    - owner: jamie
+      name: Teachers pension
+      start: 2035-01
+      annual: 18000           # yearly amount when it starts
+      cola: 1%                # yearly increase after it starts
+      survivor_pct: 50%       # share that continues to Alex if Jamie dies first
+
+  part_time:
+    - owner: alex
+      name: Consulting
+      annual: 30000           # in today's dollars
+      start: 2032-09
+      end: 2035-12
+
+expenses:
+  # Everyday yearly spending in today's dollars, NOT counting the mortgage
+  # or healthcare (those are below). Grows with inflation.
+  base_annual: 95000
+  survivor_pct: 70%           # spending after one of us dies, as a share of the above
+
+  items:                      # one-off or recurring extras, in today's dollars
+    - name: New roof
+      amount: 28000
+      year: 2029
+    - name: Travel
+      amount: 15000
+      start: 2033
+      end: 2045
+    - name: Replace car
+      amount: 40000
+      start: 2028
+      end: 2052
+      every: 8                # every 8 years: 2028, 2036, 2044, 2052
+
+  healthcare:                 # per person, per year, in today's dollars
+    pre_medicare: 16000       # retired and under 65 (private / ACA insurance)
+    medicare: 7500            # 65 and over (Part B + D + supplement)
+    inflation: 5%             # healthcare costs usually rise faster than inflation
+
+liabilities:
+  - name: Mortgage
+    balance: 285000
+    rate: 6.5%
+    monthly_payment: 2150     # principal + interest only (taxes/insurance go in spending)
+
+accounts:
+  - id: alex_401k
+    name: Alex 401(k)
+    owner: alex
+    type: traditional         # cash, taxable, traditional, roth, or hsa
+    balance: 720000
+    return: 6%
+  - id: jamie_roth401k
+    name: Jamie Roth 401(k)
+    owner: jamie
+    type: roth
+    balance: 210000
+    return: 6%
+  - id: jamie_ira
+    name: Jamie IRA
+    owner: jamie
+    type: traditional
+    balance: 160000
+    return: 5.5%
+  - id: brokerage
+    name: Joint brokerage
+    owner: joint
+    type: taxable
+    balance: 240000
+    cost_basis: 165000        # what was originally paid in (for capital gains tax)
+    return: 6%
+    dividend_yield: 1.8%      # paid out as cash each year; included in return
+  - id: alex_hsa
+    name: Alex HSA
+    owner: alex
+    type: hsa
+    balance: 42000
+    return: 5%
+  - id: savings
+    name: High-yield savings
+    owner: joint
+    type: cash
+    balance: 60000
+    return: 3%
+
+assumptions:
+  inflation: 2.5%
+  filing_status: married_joint  # married_joint or single
+  state: CA
+  # Order to draw from when spending exceeds income. Account types or account ids.
+  withdrawal_order: [savings, taxable, hsa, traditional, roth]
+  # Where extra money goes in years with a surplus.
+  deposit_surplus_to: brokerage
