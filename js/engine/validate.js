@@ -8,7 +8,7 @@
 
 import {
   parseRate, parseMoney, parseInteger, parseYear, parseMonth, parseDate, parseEnum,
-  monthIndex, closest,
+  monthIndex, closest, editDistance,
 } from './parse.js';
 
 export const SCHEMA_VERSION = 1;
@@ -30,7 +30,11 @@ class Ctx {
     const v = obj?.[key];
     const p = path ? `${path}.${key}` : key;
     if (v === undefined || v === null || v === '') {
-      if (required) this.error(label, p, `"${key}" is missing`);
+      if (required) {
+        // Point at a likely misspelling of this key in the same group.
+        const near = Object.keys(obj ?? {}).find((k) => k !== key && editDistance(k.toLowerCase(), key) <= 2);
+        this.error(label, p, `"${key}" is missing${near ? ` (is "${near}" a misspelling of it?)` : ''}`);
+      }
       return dflt;
     }
     const r = parser(v);
@@ -140,7 +144,7 @@ export function validatePlan(raw) {
     if (deathYear && startYear && deathYear < startYear) {
       c.error(label, `${path}.life_expectancy`, `life expectancy ${lifeExpectancy} is already past (that's ${deathYear}, before the plan starts in ${startYear})`);
     }
-    if (deathYear && retire && retire.year > deathYear) {
+    if (deathYear && startYear && deathYear >= startYear && retire && retire.year > deathYear) {
       c.warn(label, `${path}.retirement_date`, `retires in ${retire.year}, after life expectancy (${deathYear})`);
     }
     people.push({ id, name, birth, retire, lifeExpectancy, deathYear });

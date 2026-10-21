@@ -112,6 +112,14 @@ for (const [name, mutate, expected] of cases) {
   });
 }
 
+test('missing required key points at a likely misspelling', () => {
+  const raw = exampleRaw();
+  raw.people[1].retirment_date = raw.people[1].retirement_date;
+  delete raw.people[1].retirement_date;
+  assert.ok(validatePlan(raw).errors.includes(
+    'Jamie Sample: "retirement_date" is missing (is "retirment_date" a misspelling of it?) [people[1].retirement_date]'));
+});
+
 const warningCases = [
   ['misspelled key', (r) => { r.people[0].life_expectency = r.people[0].life_expectancy; },
     'Alex Sample: unknown setting "life_expectency" will be ignored — did you mean "life_expectancy"? [people[0]]'],
