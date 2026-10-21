@@ -1,0 +1,6 @@
+# Real financial data never lives in this repo
+plan.yaml
+*.private.yaml
+.env*
+.DS_Store
+node_modules/

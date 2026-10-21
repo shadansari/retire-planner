@@ -1,0 +1,12 @@
+{
+  "name": "retire",
+  "private": true,
+  "type": "module",
+  "description": "Retirement cash-flow projection (static page, no build step)",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
