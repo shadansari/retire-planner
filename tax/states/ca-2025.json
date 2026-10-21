@@ -1,0 +1,36 @@
+{
+  "jurisdiction": "CA",
+  "year": 2025,
+  "notes": "Latest FTB-published figures. FTB's own 2026 Form 540-ES instructions direct taxpayers to use the 2025 schedules, standard deduction and exemption credits for 2026 estimates; FTB publishes 2026 indexing in late 2026. Indexed amounts are inflated by the plan's inflation assumption after 2025 (FTB indexes by California CPI). Not modeled: exemption-credit phase-out at high AGI, CA non-conformity on HSAs (CA taxes HSA contributions and earnings), renter's credit, itemized deductions.",
+  "sources": [
+    { "title": "FTB Tax News, October 2025: 2025 Indexing (rate schedules X and Y, standard deduction, exemption credits)", "url": "https://www.ftb.ca.gov/about-ftb/newsroom/tax-news/2025/10.html" },
+    { "title": "FTB 2026 Instructions for Form 540-ES (use 2025 tax table/standard deduction/exemption credits; Behavioral Health Services Tax 1% over $1,000,000)", "url": "https://www.ftb.ca.gov/forms/2026/2026-540-es-instructions.html" },
+    { "title": "2025 Instructions for Form 540: line 9 senior exemption (each spouse 65+ claims an additional exemption credit); exemption-credit AGI limitation $252,203 single / $504,411 joint (not modeled)", "url": "https://www.ftb.ca.gov/forms/2025/2025-540-booklet.html" },
+    { "title": "EDD: Contribution rates — 2026 SDI withholding rate 1.3%, no taxable wage limit since 2024", "url": "https://edd.ca.gov/en/payroll_taxes/rates_and_withholding" },
+    { "title": "FTB: Social Security income — exclude from California income", "url": "https://www.ftb.ca.gov/file/personal/income-types/social-security.html" },
+    { "title": "2025 Instructions for Form FTB 3805P: 2.5% additional tax on early distributions from qualified plans and IRAs", "url": "https://www.ftb.ca.gov/forms/2025/2025-3805p-instructions.html" }
+  ],
+  "ordinary_brackets": {
+    "indexed": true,
+    "married_joint": [[0, 0.01], [22158, 0.02], [52528, 0.04], [82904, 0.06], [115084, 0.08], [145448, 0.093], [742958, 0.103], [891542, 0.113], [1485906, 0.123]],
+    "single":        [[0, 0.01], [11079, 0.02], [26264, 0.04], [41452, 0.06], [57542, 0.08], [72724, 0.093], [371479, 0.103], [445771, 0.113], [742953, 0.123]]
+  },
+  "standard_deduction": {
+    "indexed": true,
+    "married_joint": 11412,
+    "single": 5706
+  },
+  "exemption_credits": {
+    "indexed": true,
+    "personal": { "married_joint": 306, "single": 153 },
+    "senior_per_person_65": 153
+  },
+  "surtax": { "id": "behavioral_health_services_tax", "rate": 0.01, "over": 1000000, "indexed": false },
+  "taxes_social_security": false,
+  "capital_gains_as_ordinary": true,
+  "capital_loss_limit": { "indexed": false, "amount": 3000 },
+  "payroll": {
+    "sdi": { "rate": 0.013, "rate_year": 2026, "wage_base": null }
+  },
+  "early_withdrawal_penalty": { "rate": 0.025, "before_age_months": 714 }
+}

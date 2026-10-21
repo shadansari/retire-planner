@@ -1,0 +1,64 @@
+{
+  "jurisdiction": "federal",
+  "year": 2026,
+  "notes": "Thresholds marked indexed:true are inflated by the plan's inflation assumption for years after 2026 (IRS uses chained CPI and rounds; we don't). Social Security wage base actually follows the national average wage index; approximated with inflation.",
+  "sources": [
+    { "title": "Rev. Proc. 2025-32 (2026 inflation adjustments): §4.01 tax rate tables, §4.03 max capital gains rate amounts, §4.14 standard deduction and aged/blind additional amount", "url": "https://www.irs.gov/pub/irs-drop/rp-25-32.pdf" },
+    { "title": "IRS: Check your eligibility for the new enhanced deduction for seniors (2025–2028)", "url": "https://www.irs.gov/newsroom/check-your-eligibility-for-the-new-enhanced-deduction-for-seniors" },
+    { "title": "2025 Schedule 1-A (Form 1040), Part V: senior deduction phase-out applied to each person's $6,000", "url": "https://www.irs.gov/pub/irs-pdf/f1040s1a.pdf" },
+    { "title": "26 U.S.C. §151(d)(5) (senior deduction; MAGI definition)", "url": "https://www.law.cornell.edu/uscode/text/26/151" },
+    { "title": "SSA: Contribution and benefit base, 2026 = $184,500 (ssa.gov blocks automated fetch; figure cross-checked with Thomson Reuters Tax report)", "url": "https://www.ssa.gov/OACT/COLA/cbbdet.html" },
+    { "title": "26 U.S.C. §3101 (OASDI 6.2%, Medicare 1.45%, Additional Medicare 0.9% over $250k joint / $200k other; thresholds not indexed)", "url": "https://www.law.cornell.edu/uscode/text/26/3101" },
+    { "title": "26 U.S.C. §86 / IRS Pub. 915 (Social Security taxable portion; base $32k/$25k, adjusted base $44k/$34k; not indexed)", "url": "https://www.irs.gov/publications/p915" },
+    { "title": "26 U.S.C. §1411 (Net Investment Income Tax 3.8%; $250k joint / $200k single; not indexed) — hook only", "url": "https://www.law.cornell.edu/uscode/text/26/1411" },
+    { "title": "26 U.S.C. §72(t) (10% additional tax on early distributions before 59½)", "url": "https://www.law.cornell.edu/uscode/text/26/72" },
+    { "title": "26 U.S.C. §1211(b) (capital losses offset up to $3,000 of ordinary income)", "url": "https://www.law.cornell.edu/uscode/text/26/1211" }
+  ],
+  "ordinary_brackets": {
+    "indexed": true,
+    "married_joint": [[0, 0.10], [24800, 0.12], [100800, 0.22], [211400, 0.24], [403550, 0.32], [512450, 0.35], [768700, 0.37]],
+    "single":        [[0, 0.10], [12400, 0.12], [50400, 0.22], [105700, 0.24], [201775, 0.32], [256225, 0.35], [640600, 0.37]]
+  },
+  "standard_deduction": {
+    "indexed": true,
+    "married_joint": 32200,
+    "single": 16100
+  },
+  "additional_deduction_65": {
+    "indexed": true,
+    "married_joint": 1650,
+    "single": 2050
+  },
+  "capital_gains_brackets": {
+    "indexed": true,
+    "married_joint": [[0, 0], [98900, 0.15], [613700, 0.20]],
+    "single":        [[0, 0], [49450, 0.15], [545500, 0.20]]
+  },
+  "capital_loss_limit": { "indexed": false, "amount": 3000 },
+  "social_security_taxation": {
+    "indexed": false,
+    "married_joint": { "base": 32000, "adjusted_base": 44000 },
+    "single":        { "base": 25000, "adjusted_base": 34000 }
+  },
+  "payroll": {
+    "social_security": { "rate": 0.062, "wage_base": 184500, "indexed": true },
+    "medicare": { "rate": 0.0145 },
+    "additional_medicare": { "rate": 0.009, "indexed": false, "married_joint": 250000, "single": 200000 }
+  },
+  "niit": { "rate": 0.038, "indexed": false, "married_joint": 250000, "single": 200000 },
+  "early_withdrawal_penalty": { "rate": 0.10, "before_age_months": 714 },
+  "provisions": [
+    {
+      "id": "senior_deduction",
+      "description": "Enhanced deduction for seniors (OBBBA §70103): $6,000 per person 65+, each reduced by 6% of MAGI over $75k ($150k joint)",
+      "start_year": 2025,
+      "end_year": 2028,
+      "indexed": false,
+      "amount_per_person": 6000,
+      "min_age": 65,
+      "phaseout_rate": 0.06,
+      "married_joint": 150000,
+      "single": 75000
+    }
+  ]
+}
