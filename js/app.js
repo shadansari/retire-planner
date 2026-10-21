@@ -60,8 +60,9 @@ function render() {
 async function loadText(text, sourceLabel, { reload = false } = {}) {
   const { errors, warnings, plan } = parsePlanText(text);
   $('source').hidden = false;
+  // replaceChildren stringifies null, so only pass real nodes.
   $('source').replaceChildren(`Loaded: ${sourceLabel}`,
-    reload ? h('button', { type: 'button', id: 'reload' }, 'Reload') : null);
+    ...(reload ? [h('button', { type: 'button', id: 'reload' }, 'Reload')] : []));
   if (reload) $('reload').addEventListener('click', loadFromGitHub);
   $('empty').hidden = true;
   showMessages($('errors'), `The plan file has ${errors.length === 1 ? 'a problem' : `${errors.length} problems`} to fix`, errors);
@@ -87,6 +88,7 @@ async function loadText(text, sourceLabel, { reload = false } = {}) {
   $('results').hidden = false;
   renderAssumptions($('assumptions'), plan, taxTables);
   render();
+  $('connect-wrap').open = false;
   return true;
 }
 
@@ -119,8 +121,7 @@ async function loadFromGitHub() {
     // Remember only a token GitHub accepted, and only if asked.
     if ($('gh-remember').checked) store('sessionStorage', (s) => s.setItem(TOKEN_KEY, token));
     else store('sessionStorage', (s) => s.removeItem(TOKEN_KEY));
-    const ok = await loadText(text, `${loc.owner}/${loc.repo}/${loc.path} (from GitHub)`, { reload: true });
-    if (ok) $('connect-wrap').open = false;
+    await loadText(text, `${loc.owner}/${loc.repo}/${loc.path} (from GitHub)`, { reload: true });
     showTokenStatus();
   } catch (e) {
     showTokenStatus('');
