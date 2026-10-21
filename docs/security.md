@@ -26,8 +26,9 @@ public; the plan never is.
   tab, could read this tab's sessionStorage. Only opt in to "remember" if you trust all
   sites published from that account (or use a custom domain for this one).
 - **The page itself is the trust anchor.** Anyone who can push to this public repo can
-  change the code that receives the token. Protect the account with 2FA; consider branch
-  protection on `main`.
+  change the code that receives the token. Protect the account with 2FA. `main` is
+  protected (applies to admins too): no force-pushes, no deletion, linear history; direct
+  pushes are still allowed (no required reviews: single maintainer).
 - Meta-tag CSP can't set `frame-ancestors` or `report-uri`; HTTP headers aren't
   configurable on GitHub Pages.
 - A displayed plan stays on screen after **Forget token** until the tab is closed or
