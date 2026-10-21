@@ -36,10 +36,11 @@ with clear messages.
 ```
 index.html, css/app.css
 js/app.js                 wiring only
-js/data/load.js           text → js-yaml (CORE_SCHEMA) → validate → normalize
+js/data/load.js           text → js-yaml (CORE_SCHEMA) → validatePlan
 js/data/github.js         (M3) GET /repos/{o}/{r}/contents/{path}, Accept: application/vnd.github.raw
-js/engine/validate.js     schema v1 → { errors[], warnings[] }
-js/engine/normalize.js    "3%"→0.03, dates→{year,month}, defaults, id resolution
+js/engine/parse.js        primitive parsers: "3%"→0.03, "$1,000", YYYY-MM, monthIndex, typo hints
+js/engine/validate.js     schema v1, one pass → { errors[], warnings[], plan } (plan = normalized,
+                          null if any error). Engine code only ever sees the normalized plan.
 js/engine/timeline.js     ages, alive/retired/claiming flags, partial-year fractions
 js/engine/{income,expenses,liabilities,accounts,withdrawals}.js
 js/engine/simulate.js     year loop → { years[], summary }
@@ -48,7 +49,7 @@ js/ui/                    summary, table, chart (SVG), assumptions, errors, form
 vendor/js-yaml.mjs        parse with CORE_SCHEMA so dates stay strings
 tax/                      (M2) federal-2026.json, states/<st>-2026.json, rmd tables
 examples/example.yaml
-test/*.test.js, test/fixtures/invalid/*.yaml
+test/*.test.js, test/helpers.js
 ```
 
 Local run: `python3 -m http.server` (ES modules need http, not file://). Tests: `npm test`.
@@ -150,4 +151,7 @@ Every new schema field needs a validation rule and an invalid-fixture test.
 - Engine tests use hand-computed small fixtures (to the dollar) and a golden snapshot of key
   years of `examples/example.yaml`. When engine semantics change intentionally, update the
   snapshot in the same commit and say why.
-- Each validation rule has an invalid fixture asserting the exact message.
+- Each validation rule has a case in `test/validate.test.js`: mutate a fresh copy of the
+  example's raw object, assert the exact message. (Text fixtures only for YAML-syntax cases.)
+- Months internally are `monthIndex = year*12 + (month-1)`; salary `endMonth` is the last
+  month paid (inclusive); `retirement_date` is the first month not working.
