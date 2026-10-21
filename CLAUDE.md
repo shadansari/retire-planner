@@ -187,6 +187,16 @@ Every new schema field needs a validation rule and an invalid-fixture test.
   editing plan.yaml), `docs/security.md` (threat model + deploy checklist),
   `test/security.test.js` (CSP, sinks, storage, vendor checksum, gitignore).
   Public repo: `shadansari/retire-planner`, GitHub Pages from `main` / root, `.nojekyll`.
+- **Status (end of 2026-10-20 session):** M1–M3 complete and deployed at
+  https://shadansari.github.io/retire-planner/ (`main` protected: no force-push/deletion,
+  linear history). 111 tests green. Open items:
+  1. Owner hasn't yet created the private plan repo/token or done a real authenticated
+     load (only the 401 path was tested live; success path is unit-tested with a mock).
+  2. CA 2026 indexing due from FTB ~late Dec 2026 → add `tax/states/ca-2026.json`,
+     repoint `tax/index.json`, update goldens. Federal 2027 (Rev. Proc. ~Oct 2026) likewise.
+  3. Possibly retune `examples/example.yaml` (with taxes it ends at ~$893K real).
+  4. No LICENSE yet (owner to decide).
+  5. After a push, Pages can lag ~30s past "built"; verify with tools/check-page.mjs.
 - **Later**: Roth conversions, NIIT/IRMAA real, ACA, scenario comparison, Monte Carlo, CSV export.
 
 ## Testing
