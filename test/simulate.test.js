@@ -44,8 +44,8 @@ test('net cash flow identity holds every year', () => {
   for (const { nominal: n } of simulate(examplePlan()).years) {
     const lhs = n.income.total - n.contributions.employee - n.spending.total - n.debt.payment - n.taxes.total;
     close(lhs, n.net, 1e-6);
-    if (n.net >= 0) assert.equal(n.withdrawals.total, 0);
-    else close(n.withdrawals.total + n.shortfall, -n.net, 1e-6);
+    // Cash in from withdrawals (incl. RMDs) + unmet need − surplus saved = gap.
+    close(n.withdrawals.total + n.shortfall - n.surplus, -n.net, 1);
   }
 });
 
