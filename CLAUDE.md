@@ -42,7 +42,7 @@ js/engine/parse.js        primitive parsers: "3%"→0.03, "$1,000", YYYY-MM, mon
 js/engine/validate.js     schema v1, one pass → { errors[], warnings[], plan } (plan = normalized,
                           null if any error). Engine code only ever sees the normalized plan.
 js/engine/timeline.js     ages, alive/retired/claiming flags, partial-year fractions
-js/engine/{income,expenses,liabilities,accounts,withdrawals}.js
+js/engine/{income,expenses,liabilities,accounts}.js   (accounts.js includes withdrawInOrder)
 js/engine/simulate.js     year loop → { years[], summary }
 js/engine/tax/            (M2) index, tables, payroll, federal, capgains, socialsecurity, state, rmd, hooks
 js/ui/                    summary, table, chart (SVG), assumptions, errors, format
