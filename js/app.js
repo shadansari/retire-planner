@@ -111,7 +111,6 @@ function showTokenStatus(msg) {
 async function loadFromGitHub() {
   const typed = $('gh-token').value.trim();
   if (typed) token = typed;
-  $('gh-token').value = ''; // don't leave it sitting in the field
   const loc = readLocation();
   store('localStorage', (s) => s.setItem(LOC_KEY, JSON.stringify(loc)));
   showTokenStatus('Loading…');
@@ -127,6 +126,9 @@ async function loadFromGitHub() {
     showTokenStatus('');
     showMessages($('errors'), "Couldn't load the plan from GitHub", [scrub(e.message, token)]);
   } finally {
+    // Cleared only after the request so password managers see a completed sign-in
+    // and offer to save the token; it doesn't stay sitting in the field.
+    $('gh-token').value = '';
     $('gh-load').disabled = false;
   }
 }

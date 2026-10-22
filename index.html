@@ -28,12 +28,12 @@
   <main>
     <details id="connect-wrap" class="panel connect" open>
       <summary><h2>Load our plan from GitHub</h2></summary>
-      <form id="connect-form" autocomplete="off" novalidate>
+      <form id="connect-form" novalidate>
         <div class="fields">
-          <label>Owner <input id="gh-owner" required spellcheck="false" autocapitalize="off" placeholder="alexsample"></label>
-          <label>Repository <input id="gh-repo" required spellcheck="false" autocapitalize="off" placeholder="our-plan"></label>
-          <label>File path <input id="gh-path" required spellcheck="false" autocapitalize="off" value="plan.yaml"></label>
-          <label class="wide">GitHub token <input id="gh-token" type="password" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="github_pat_…"></label>
+          <label>Owner <input id="gh-owner" name="username" autocomplete="username" required spellcheck="false" autocapitalize="off" placeholder="alexsample"></label>
+          <label>Repository <input id="gh-repo" autocomplete="off" required spellcheck="false" autocapitalize="off" placeholder="our-plan"></label>
+          <label>File path <input id="gh-path" autocomplete="off" required spellcheck="false" autocapitalize="off" value="plan.yaml"></label>
+          <label class="wide">GitHub token <input id="gh-token" name="password" type="password" autocomplete="current-password" spellcheck="false" autocapitalize="off" placeholder="github_pat_…"></label>
         </div>
         <label class="check"><input type="checkbox" id="gh-remember"> Remember the token until this tab is closed</label>
         <div class="actions">
