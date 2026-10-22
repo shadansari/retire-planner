@@ -187,7 +187,9 @@ Every new schema field needs a validation rule and an invalid-fixture test.
   editing plan.yaml), `docs/security.md` (threat model + deploy checklist),
   `test/security.test.js` (CSP, sinks, storage, vendor checksum, gitignore).
   Public repo: `shadansari/retire-planner`, GitHub Pages from `main` / root, `.nojekyll`.
-- **Status (end of 2026-10-20 session):** M1–M3 complete and deployed at
+- **Status (end of 2026-10-21 session):** owner's next steps: load the real plan once on
+  plan.takarola.com (not yet confirmed there), update password-manager site, then replace
+  the example data in our-plan/plan.yaml. Earlier status: M1–M3 complete and deployed at
   https://plan.takarola.com/ (custom domain since 2026-10-21: `CNAME` file, domain
   verified in the owner's GitHub Pages settings, HTTPS enforced, Cloudflare DNS
   `plan` CNAME → shadansari.github.io, DNS only; old github.io URL redirects) (`main` protected: no force-push/deletion,
