@@ -4,9 +4,7 @@
 //
 // Token rules (CLAUDE.md): only ever in the Authorization header. Never in a URL,
 // never logged, never stored here, and scrubbed from any error text we produce.
-// `fetchImpl` is injectable for tests. Also used server-side by js/server/plan-proxy.js
-// (Cloudflare Pages Function) with `browser: false`: the Workers runtime rejects the
-// browser-only RequestInit fields.
+// `fetchImpl` is injectable for tests.
 
 const NAME_RE = /^[A-Za-z0-9._-]{1,100}$/;
 
@@ -43,7 +41,7 @@ function friendlyStatus(status, rateRemaining) {
 }
 
 // → plan text. Throws Error with a friendly, token-free message.
-export async function fetchPlanText({ owner, repo, path, token }, fetchImpl = globalThis.fetch, { browser = true } = {}) {
+export async function fetchPlanText({ owner, repo, path, token }, fetchImpl = globalThis.fetch) {
   const bad = validateLocation({ owner, repo, path });
   if (bad.length) throw new GitHubError(bad.join(' '));
   if (!token || !token.trim()) throw new GitHubError('Paste your GitHub token first.');
@@ -55,10 +53,10 @@ export async function fetchPlanText({ owner, repo, path, token }, fetchImpl = gl
         Accept: 'application/vnd.github.raw',
         Authorization: `Bearer ${token.trim()}`,
         'X-GitHub-Api-Version': '2022-11-28',
-        // GitHub refuses requests without one; browsers add it, Workers don't.
-        ...(browser ? {} : { 'User-Agent': 'retire-planner' }),
       },
-      ...(browser ? { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer' } : {}),
+      cache: 'no-store',
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer',
     });
   } catch (e) {
     throw new GitHubError(scrub(`Couldn't reach GitHub (${e.message}). Check your internet connection.`, token));

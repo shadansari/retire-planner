@@ -17,7 +17,6 @@ public; the plan never is.
 | Exfiltration | `connect-src` limits fetches to this origin and api.github.com, so even injected script couldn't send data elsewhere via fetch/XHR. |
 | Request hygiene | `credentials: 'omit'`, `referrerPolicy: 'no-referrer'`, `cache: 'no-store'`; owner/repo validated, path segments URL-encoded, `..` rejected. |
 | Clickjacking | GitHub Pages can't send `frame-ancestors`/`X-Frame-Options`, so the app refuses to run when framed. |
-| Hosted mode (Cloudflare) | Whole site behind Cloudflare Access (email allow-list). The GitHub token is a Cloudflare secret used only by `functions/api/plan.js`, never sent to browsers. The function verifies Access's RS256 JWT itself (signature via the team's certs, `iss`, `aud`, `exp`/`nbf`) and fails closed when unconfigured, so a missing or broken Access policy doesn't expose the plan. Real headers via `_headers`: CSP with `frame-ancestors 'none'`, `X-Frame-Options`, `nosniff`. Responses `no-store`. Preview deployments disabled. |
 | YAML parsing | js-yaml 4 `CORE_SCHEMA` (no JS types, no timestamps); `__proto__` keys can't pollute prototypes (test). |
 
 ## Known limitations (accepted)
@@ -31,10 +30,7 @@ public; the plan never is.
   protected (applies to admins too): no force-pushes, no deletion, linear history; direct
   pushes are still allowed (no required reviews: single maintainer).
 - Meta-tag CSP can't set `frame-ancestors` or `report-uri`; HTTP headers aren't
-  configurable on GitHub Pages (they are on Cloudflare: see `_headers`).
-- Hosted mode trusts Cloudflare (it terminates TLS and sees the plan in transit) and
-  anyone who can change the Pages project's settings or secrets. Protect the Cloudflare
-  account with 2FA. The server token can read the plan repo only.
+  configurable on GitHub Pages.
 - A displayed plan stays on screen after **Forget token** until the tab is closed or
   reloaded.
 

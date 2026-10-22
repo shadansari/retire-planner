@@ -49,16 +49,3 @@ test('YAML __proto__ keys do not pollute prototypes', () => {
   parsePlanText('__proto__:\n  polluted: yes\nschema_version: 1\n');
   assert.equal(({}).polluted, undefined);
 });
-
-test('_headers (Cloudflare) carries the same CSP as index.html plus frame-ancestors', () => {
-  const meta = /http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(read('index.html'))[1];
-  const hdr = /Content-Security-Policy: (.+)/.exec(read('_headers'))[1].trim();
-  assert.equal(hdr, `${meta}; frame-ancestors 'none'`);
-});
-
-test('server code has no secrets or logging', () => {
-  for (const f of [...jsFiles('functions'), ...jsFiles('js/server')]) {
-    const src = read(f);
-    assert.ok(!/console\.|github_pat_[A-Za-z0-9]|gh[pousr]_[A-Za-z0-9]{20}/.test(src), f);
-  }
-});

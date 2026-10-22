@@ -1,8 +1,0 @@
-# Cloudflare Pages response headers (hosted mode; GitHub Pages ignores this file).
-# Same CSP as the <meta> in index.html, plus what only a real header can do:
-# frame-ancestors (anti-framing) and nosniff. /api/* responses set their own headers.
-/*
-  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
-  X-Content-Type-Options: nosniff
-  Referrer-Policy: no-referrer
-  X-Frame-Options: DENY
