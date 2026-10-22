@@ -190,8 +190,11 @@ Every new schema field needs a validation rule and an invalid-fixture test.
 - **Status (end of 2026-10-20 session):** M1–M3 complete and deployed at
   https://shadansari.github.io/retire-planner/ (`main` protected: no force-push/deletion,
   linear history). 111 tests green. Open items:
-  1. Owner hasn't yet created the private plan repo/token or done a real authenticated
-     load (only the 401 path was tested live; success path is unit-tested with a mock).
+  1. Done 2026-10-21: private repo `shadansari/our-plan` (plan.yaml, still example data
+     until the owner fills it in) loaded live with a real fine-grained token. Form is
+     marked up for password-manager autofill (owner=username, token=current-password);
+     the browser did not offer to save automatically (preventDefault submit, no
+     navigation), so the doc tells users to add the entry by hand.
   2. CA 2026 indexing due from FTB ~late Dec 2026 → add `tax/states/ca-2026.json`,
      repoint `tax/index.json`, update goldens. Federal 2027 (Rev. Proc. ~Oct 2026) likewise.
   3. Possibly retune `examples/example.yaml` (with taxes it ends at ~$893K real).
