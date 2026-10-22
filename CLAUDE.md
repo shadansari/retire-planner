@@ -188,7 +188,9 @@ Every new schema field needs a validation rule and an invalid-fixture test.
   `test/security.test.js` (CSP, sinks, storage, vendor checksum, gitignore).
   Public repo: `shadansari/retire-planner`, GitHub Pages from `main` / root, `.nojekyll`.
 - **Status (end of 2026-10-20 session):** M1–M3 complete and deployed at
-  https://shadansari.github.io/retire-planner/ (`main` protected: no force-push/deletion,
+  https://plan.takarola.com/ (custom domain since 2026-10-21: `CNAME` file, domain
+  verified in the owner's GitHub Pages settings, HTTPS enforced, Cloudflare DNS
+  `plan` CNAME → shadansari.github.io, DNS only; old github.io URL redirects) (`main` protected: no force-push/deletion,
   linear history). 111 tests green. Open items:
   1. Done 2026-10-21: private repo `shadansari/our-plan` (plan.yaml, still example data
      until the owner fills it in) loaded live with a real fine-grained token. Form is

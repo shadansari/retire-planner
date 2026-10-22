@@ -21,10 +21,13 @@ public; the plan never is.
 
 ## Known limitations (accepted)
 
-- **Shared origin.** GitHub Pages serves all of an account's project sites from
-  `<user>.github.io`. Another project site of the *same account*, opened in the same
-  tab, could read this tab's sessionStorage. Only opt in to "remember" if you trust all
-  sites published from that account (or use a custom domain for this one).
+- **Origin.** The site is served from its own custom domain, `plan.takarola.com`
+  (`CNAME` file; domain verified for the GitHub account so the name can't be claimed
+  by another Pages site; HTTPS enforced). The `shadansari.github.io/retire-planner/`
+  URL redirects there. This keeps it off the shared `<user>.github.io` origin, where
+  any other site of the account could read its storage, frame it same-origin, or
+  register a service worker over it. Keep the DNS record `plan` → `shadansari.github.io`
+  **DNS only** (not proxied) in Cloudflare.
 - **The page itself is the trust anchor.** Anyone who can push to this public repo can
   change the code that receives the token. Protect the account with 2FA. `main` is
   protected (applies to admins too): no force-pushes, no deletion, linear history; direct

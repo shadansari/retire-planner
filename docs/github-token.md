@@ -59,8 +59,8 @@ Let a password manager fill it instead:
 - The form is marked up as a sign-in: **Owner** is the username and **GitHub token** is
   the password. After a successful **Load plan**, your browser or password manager
   (1Password, Bitwarden, iCloud Keychain, Chrome/Firefox) should offer to save it for
-  `shadansari.github.io`. If it doesn't, add an entry by hand: site
-  `https://shadansari.github.io`, username = the owner, password = the token.
+  `plan.takarola.com`. If it doesn't, add an entry by hand: site
+  `https://plan.takarola.com`, username = the owner, password = the token.
 - Next time, autofill the token field and click **Load plan**.
 - When the token expires, make a new one and update the saved entry.
 
