@@ -11,6 +11,13 @@ with clear messages.
 
 ## Hard rules
 
+- **Hosting (decided 2026-10-21):** primary is **Cloudflare Pages + Cloudflare Access**
+  ("hosted mode", docs/cloudflare.md): site behind an email allow-list, `/api/plan`
+  (`functions/api/plan.js` → `js/server/plan-proxy.js`) reads the plan with a server-held
+  token and verifies the Access JWT itself (fail closed). This is the only server code;
+  keep it that small. GitHub Pages stays as the public demo + browser-token fallback.
+  The page probes `api/plan` except on `*.github.io`/localhost (`?hosted` forces it);
+  responses with `X-Plan-Server` mean hosted mode.
 - **No build step, no runtime deps.** Plain HTML/CSS + vanilla JS ES modules. `package.json`
   exists only for `"type": "module"` and `npm test` → `node --test`. Node ≥ 20.
 - **No third-party scripts at runtime.** Libraries are vendored in `vendor/` with
@@ -37,6 +44,8 @@ with clear messages.
 index.html, css/app.css
 js/app.js                 wiring only
 js/data/load.js           text → js-yaml (CORE_SCHEMA) → validatePlan
+js/server/plan-proxy.js   hosted mode: Access JWT check + GitHub fetch (web APIs only, tested in node)
+functions/api/plan.js     Cloudflare Pages Function wrapper; _headers = real HTTP headers on Cloudflare
 js/data/github.js         (M3) GET /repos/{o}/{r}/contents/{path}, Accept: application/vnd.github.raw
 js/engine/parse.js        primitive parsers: "3%"→0.03, "$1,000", YYYY-MM, monthIndex, typo hints
 js/engine/validate.js     schema v1, one pass → { errors[], warnings[], plan } (plan = normalized,
@@ -191,10 +200,10 @@ Every new schema field needs a validation rule and an invalid-fixture test.
   https://shadansari.github.io/retire-planner/ (`main` protected: no force-push/deletion,
   linear history). 111 tests green. Open items:
   1. Done 2026-10-21: private repo `shadansari/our-plan` (plan.yaml, still example data
-     until the owner fills it in) loaded live with a real fine-grained token. Form is
-     marked up for password-manager autofill (owner=username, token=current-password);
-     the browser did not offer to save automatically (preventDefault submit, no
-     navigation), so the doc tells users to add the entry by hand.
+     until the owner fills it in) loaded live with a real browser token. Browsers didn't
+     offer to save the token (no navigation), which prompted the move to hosted mode.
+     Hosted-mode code done 2026-10-21; **owner still has to do the Cloudflare dashboard
+     setup (docs/cloudflare.md)** and verify a live load.
   2. CA 2026 indexing due from FTB ~late Dec 2026 → add `tax/states/ca-2026.json`,
      repoint `tax/index.json`, update goldens. Federal 2027 (Rev. Proc. ~Oct 2026) likewise.
   3. Possibly retune `examples/example.yaml` (with taxes it ends at ~$893K real).
