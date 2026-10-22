@@ -23,9 +23,17 @@ Never put `plan.yaml` in the public `retire-planner` repository.
 3. **Expiration**: pick something you'll remember to renew (e.g. 1 year).
 4. **Resource owner**: the account that owns `our-plan`.
 5. **Repository access**: **Only select repositories** → choose `our-plan`.
-6. **Permissions** → **Repository permissions** → **Contents**: **Read-only**.
-   (GitHub adds *Metadata: Read-only* automatically. Nothing else.)
-7. **Generate token** and copy it. It starts with `github_pat_`. GitHub shows it only once.
+   Do this *before* adding permissions: repository permissions only appear once a
+   repository is selected.
+6. **Permissions**: click **+ Add permissions**, type `Contents` in the filter box, and
+   select it. Then set **Contents** to **Read-only** (it may default to Read and write).
+   The long list also offers things like repository creation, license policy, and
+   security advisories: add none of them. GitHub adds *Metadata: Read-only*
+   automatically. The finished token has exactly two: **Contents: Read-only** and
+   **Metadata: Read-only**. If `Contents` doesn't show up, check that **Resource owner**
+   is the account that owns `our-plan`.
+7. **Generate token** and copy it. It starts with `github_pat_`. GitHub shows it only once,
+   so save it straight into your password manager (see "Not retyping the token" below).
 
 If your spouse also has a GitHub account, add them as a collaborator on `our-plan`
 (Settings → Collaborators) and have them create their own token the same way.
@@ -42,6 +50,21 @@ path** (`plan.yaml`), paste the token, and click **Load plan**.
   link, or sent anywhere else. Owner/repo/path (not the token) are remembered in this
   browser for convenience.
 - **Forget token** clears it immediately.
+
+## Not retyping the token
+
+The page never stores the token past the tab (by design), so each new tab asks for it.
+Let a password manager fill it instead:
+
+- The form is marked up as a sign-in: **Owner** is the username and **GitHub token** is
+  the password. After a successful **Load plan**, your browser or password manager
+  (1Password, Bitwarden, iCloud Keychain, Chrome/Firefox) should offer to save it for
+  `shadansari.github.io`. If it doesn't, add an entry by hand: site
+  `https://shadansari.github.io`, username = the owner, password = the token.
+- Next time, autofill the token field and click **Load plan**.
+- When the token expires, make a new one and update the saved entry.
+
+Keep it in the password manager, not in a note or file: it reads your whole plan.
 
 ## If something goes wrong
 
