@@ -57,13 +57,14 @@ function render() {
 }
 
 // Returns true if the plan rendered.
-async function loadText(text, sourceLabel, { reload = false } = {}) {
+// `reload`: function to re-fetch from the same source (adds a Reload button).
+async function loadText(text, sourceLabel, { reload = null } = {}) {
   const { errors, warnings, plan } = parsePlanText(text);
   $('source').hidden = false;
   // replaceChildren stringifies null, so only pass real nodes.
   $('source').replaceChildren(`Loaded: ${sourceLabel}`,
     ...(reload ? [h('button', { type: 'button', id: 'reload' }, 'Reload')] : []));
-  if (reload) $('reload').addEventListener('click', loadFromGitHub);
+  if (reload) $('reload').addEventListener('click', reload);
   $('empty').hidden = true;
   showMessages($('errors'), `The plan file has ${errors.length === 1 ? 'a problem' : `${errors.length} problems`} to fix`, errors);
   showMessages($('warnings'), errors.length ? 'Also worth checking' : 'Warnings (the projection still ran)', warnings);
@@ -120,7 +121,7 @@ async function loadFromGitHub() {
     // Remember only a token GitHub accepted, and only if asked.
     if ($('gh-remember').checked) store('sessionStorage', (s) => s.setItem(TOKEN_KEY, token));
     else store('sessionStorage', (s) => s.removeItem(TOKEN_KEY));
-    await loadText(text, `${loc.owner}/${loc.repo}/${loc.path} (from GitHub)`, { reload: true });
+    await loadText(text, `${loc.owner}/${loc.repo}/${loc.path} (from GitHub)`, { reload: loadFromGitHub });
     showTokenStatus();
   } catch (e) {
     showTokenStatus('');
@@ -188,5 +189,42 @@ new ResizeObserver(([entry]) => {
   }
 }).observe($('chart'));
 
-if (new URLSearchParams(location.search).has('demo')) loadDemo();
-else if (token && savedLoc) loadFromGitHub(); // tab reload with a remembered token
+// --- Hosted mode (Cloudflare Pages + Access) -----------------------------------------
+// There the whole site sits behind Cloudflare Access and /api/plan (functions/api/plan.js)
+// returns the plan using a server-held token: no token in the browser. Its responses carry
+// X-Plan-Server; a static host (GitHub Pages) answers with a plain 404, so we fall back to
+// the token form. redirect: 'manual' turns an expired Access session (302 to the login
+// page) into a clear message instead of a CORS error.
+async function loadFromServer({ quiet = false } = {}) {
+  let res;
+  try {
+    res = await fetch('api/plan', { cache: 'no-store', redirect: 'manual' });
+  } catch {
+    if (!quiet) showMessages($('errors'), "Couldn't load the plan", ['Network error. Check your connection and try again.']);
+    return false;
+  }
+  if (res.type === 'opaqueredirect') {
+    if (!quiet) showMessages($('errors'), "Couldn't load the plan", ['Your sign-in has expired. Reload the page to sign in again.']);
+    return !quiet;
+  }
+  if (!res.headers.has('x-plan-server')) return false;
+  $('connect-wrap').hidden = true; // no token needed here
+  $('empty').textContent = 'Loading your plan…';
+  const text = await res.text();
+  if (!res.ok) {
+    $('empty').textContent = 'Your plan could not be loaded. You can still try the demo or open a local plan file.';
+    showMessages($('errors'), "Couldn't load the plan", [text]);
+    return true;
+  }
+  const who = res.headers.get('x-plan-user');
+  showMessages($('errors'), '', []);
+  await loadText(text, `our plan from GitHub${who ? ` (signed in as ${who})` : ''}`, { reload: () => loadFromServer() });
+  return true;
+}
+
+// Static hosts have no /api/plan; skip the probe there so it doesn't log a 404 on every
+// visit. `?hosted` forces it (local testing against a stand-in server).
+const params = new URLSearchParams(location.search);
+const mayBeHosted = params.has('hosted') || !/(^|\.)github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
+if (params.has('demo')) loadDemo();
+else if (!(mayBeHosted && await loadFromServer({ quiet: true })) && token && savedLoc) loadFromGitHub(); // tab reload with a remembered token
