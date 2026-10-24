@@ -196,9 +196,13 @@ Every new schema field needs a validation rule and an invalid-fixture test.
   editing plan.yaml), `docs/security.md` (threat model + deploy checklist),
   `test/security.test.js` (CSP, sinks, storage, vendor checksum, gitignore).
   Public repo: `shadansari/retire-planner`, GitHub Pages from `main` / root, `.nojekyll`.
-- **Status (end of 2026-10-21 session):** real plan loads on plan.takarola.com with the
-  token autofilled by Chrome's password manager (confirmed 2026-10-23). Next: replace
-  the example data in our-plan/plan.yaml. Earlier status: M1–M3 complete and deployed at
+- **Status (end of 2026-10-23 session):** M4 plan editor live on plan.takarola.com.
+  Owner's token is now Contents: Read and write; saving from the editor verified live
+  (names updated, stale account names fixed and saved). Next: owner replaces the remaining
+  example values (accounts, paychecks, Social Security, pensions, expenses, debts) via
+  Edit plan / Guided setup. Possible follow-ups: auto-rename only covers owner-linked
+  names (joint accounts, expenses untouched); save conflicts require reload + redo.
+  Earlier status: M1–M3 complete and deployed at
   https://plan.takarola.com/ (custom domain since 2026-10-21: `CNAME` file, domain
   verified in the owner's GitHub Pages settings, HTTPS enforced, Cloudflare DNS
   `plan` CNAME → shadansari.github.io, DNS only; old github.io URL redirects) (`main` protected: no force-push/deletion,
