@@ -13,7 +13,8 @@ including federal, California, and payroll taxes and required minimum distributi
 - This repository contains only code, tax tables, and fake example data. Real plans
   live in a separate private repository and are never committed here.
 - The page fetches the plan directly from `api.github.com` in your browser using a
-  fine-grained, read-only token scoped to that one repository. There is no server.
+  fine-grained token scoped to that one repository (read-only, or read and write to save
+  edits from the page). There is no server.
 - The token is kept in memory (or this tab's sessionStorage if you opt in), never in
   localStorage, URLs, or logs.
 - A strict Content-Security-Policy allows scripts and styles only from this site and

@@ -1,8 +1,12 @@
-# Setting up: private plan repo + read-only token
+# Setting up: private plan repo + token
 
 The page is public. Your plan is not: it lives in a **private** GitHub repository, and
-the page reads it with a **fine-grained personal access token** that can only *read*
-that *one* repository.
+the page reads (and, if you allow it, saves) it with a **fine-grained personal access
+token** that works on that *one* repository only.
+
+**Read-only or read and write?** Read-only lets the page show the plan. **Read and write**
+also lets you save changes from the page's plan editor (each save is a commit you can
+see and undo on GitHub). We use read and write; someone who only views can use read-only.
 
 ## 1. Create the private data repository (once)
 
@@ -15,21 +19,22 @@ that *one* repository.
 
 Never put `plan.yaml` in the public `retire-planner` repository.
 
-## 2. Create a read-only token (each person who views the plan)
+## 2. Create a token (each person who uses the page)
 
 1. github.com → your profile picture → **Settings** → **Developer settings** →
    **Personal access tokens** → **Fine-grained tokens** → **Generate new token**.
-2. **Token name**: `retirement planner (read plan)`.
+2. **Token name**: `retirement planner`.
 3. **Expiration**: pick something you'll remember to renew (e.g. 1 year).
 4. **Resource owner**: the account that owns `our-plan`.
 5. **Repository access**: **Only select repositories** → choose `our-plan`.
    Do this *before* adding permissions: repository permissions only appear once a
    repository is selected.
 6. **Permissions**: click **+ Add permissions**, type `Contents` in the filter box, and
-   select it. Then set **Contents** to **Read-only** (it may default to Read and write).
+   select it. Then set **Contents** to **Read and write** (to save from the page) or
+   **Read-only** (to only view).
    The long list also offers things like repository creation, license policy, and
    security advisories: add none of them. GitHub adds *Metadata: Read-only*
-   automatically. The finished token has exactly two: **Contents: Read-only** and
+   automatically. The finished token has exactly two: **Contents** (as chosen) and
    **Metadata: Read-only**. If `Contents` doesn't show up, check that **Resource owner**
    is the account that owns `our-plan`.
 7. **Generate token** and copy it. It starts with `github_pat_`. GitHub shows it only once,
@@ -72,7 +77,9 @@ Keep it in the password manager, not in a note or file: it reads your whole plan
 |---|---|
 | *GitHub rejected the token* | It was mistyped, expired, or revoked. Make a new one. |
 | *Not found* | Check owner / repository / path spelling, and that the token was given access to this repository (step 2.5). |
-| *doesn't have permission* | The token needs **Contents: Read-only** on this repository. |
+| *doesn't have permission* | The token needs **Contents** access on this repository. |
+| *This token can only read the plan* | Saving needs **Contents: Read and write**. Edit the token on GitHub (Fine-grained tokens → the token → Edit) or make a new one. |
 
 If a token is ever exposed, revoke it at **Settings → Developer settings → Fine-grained
-tokens** and make a new one. A read-only token can't change or delete anything.
+tokens** and make a new one. A read-only token can't change anything; a read-and-write
+token can change only files in that one repository, and every change stays in its history.

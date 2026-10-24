@@ -24,7 +24,10 @@ with clear messages.
   for demo mode to fetch `examples/example.yaml`.
 - **Token handling (M3):** PAT lives in a module variable; optional "remember for this tab"
   uses sessionStorage. Never localStorage, never logged, never in URLs, scrub it from any
-  displayed error. owner/repo/path (not the token) may go in localStorage.
+  displayed error. owner/repo/path (not the token) may go in localStorage. Since M4 the
+  owner's token is **Contents: Read and write** (approved 2026-10-23) so the editor can save.
+- **Plan data in the browser:** the editor's unsaved draft lives in sessionStorage
+  (`retire.draft`, this tab only), never localStorage (tested).
 - **Never commit real data.** `plan.yaml` and `*.private.yaml` are gitignored. All dev and
   tests use `examples/example.yaml` (obviously fake names, round numbers).
 - **Engine purity:** everything under `js/engine/` is pure — no DOM, no fetch, no
@@ -37,7 +40,13 @@ with clear messages.
 index.html, css/app.css
 js/app.js                 wiring only
 js/data/load.js           text → js-yaml (CORE_SCHEMA) → validatePlan
-js/data/github.js         (M3) GET /repos/{o}/{r}/contents/{path}, Accept: application/vnd.github.raw
+js/data/github.js         (M3) GET /repos/{o}/{r}/contents/{path}, Accept: application/vnd.github.raw;
+                          (M4) gitBlobSha, fetchFileSha, savePlanText (PUT with the loaded sha)
+js/editor/catalog.js      (M4) every field: label, kind, why/where help, suggestions, sections in wizard order
+js/editor/model.js        (M4, pure) input<->raw encoding, ids, add/remove cascades, messages→paths, change summary
+js/editor/serialize.js    (M4, pure) raw → plan.yaml (fixed key order, section notes; round-trip tested)
+js/editor/status.js       (M4, pure) messages → sections/items (badges, review)
+js/editor/{editor,form,wizard,browse}.js   (M4) DOM: controller+toolbar+draft, controls, guided setup, browse & edit
 js/engine/parse.js        primitive parsers: "3%"→0.03, "$1,000", YYYY-MM, monthIndex, typo hints
 js/engine/validate.js     schema v1, one pass → { errors[], warnings[], plan } (plan = normalized,
                           null if any error). Engine code only ever sees the normalized plan.
@@ -208,6 +217,16 @@ Every new schema field needs a validation rule and an invalid-fixture test.
   3. Possibly retune `examples/example.yaml` (with taxes it ends at ~$893K real).
   4. No LICENSE yet (owner to decide).
   5. After a push, Pages can lag ~30s past "built"; verify with tools/check-page.mjs.
+- **M4 — plan editor** (done 2026-10-23): guided setup (11 steps + review, Back/Next,
+  skippable) and browse & edit (section/entry tree, add/duplicate/remove with cascades),
+  consultant-style help per field, live validation next to fields, Preview, Save to GitHub
+  (commit message from the change summary; refuses if the file changed since load, then
+  offers download) or Download. Editor works on the *raw* plan and re-runs validatePlan on
+  every edit; the file is rewritten by `serializePlan`, so hand comments are not kept
+  (approved). Fresh plans hide problems until a field is touched or its step passed.
+  Contract-checked against the real Contents API (create/update/stale-sha refusal).
+  When adding a schema field: validator rule + catalog entry (test fails otherwise) +
+  serializer key order.
 - **Later**: Roth conversions, NIIT/IRMAA real, ACA, scenario comparison, Monte Carlo, CSV export.
 
 ## Testing

@@ -4,22 +4,43 @@ Our plan is the file `plan.yaml` in our private GitHub repository. The page read
 shows, year by year, whether our savings last. You can't break anything permanently:
 GitHub keeps every earlier version.
 
-## How to edit
+## How to edit (on the page)
 
-1. On github.com, open our private plan repository and click **plan.yaml**.
-2. Click the **pencil** icon (Edit this file).
-3. Make your change. Then click **Commit changes…** → **Commit changes**.
-4. On the planner page, click **Reload** (next to "Loaded: …").
+1. Open the planner and load our plan (owner, repository, path, and the token from the
+   password manager).
+2. Click **Edit plan** (next to "Loaded: …").
+3. **Browse & edit** lists every part of the plan: Getting started, About you, Savings &
+   investments, and so on. Pick a section, then an entry (like an account), and change it.
+   Each question says *why* it's asked and *where to find* the number.
+4. **Preview** shows the projection with your changes before saving.
+5. **Save to GitHub** saves it. Each save is recorded on GitHub with a note of what
+   changed, so any change can be looked up or undone later.
 
-If the page finds a problem, it lists it in a red box saying exactly what's wrong and where:
+Starting from scratch? **Guided setup** (or **Start a new plan** on the opening screen)
+walks through everything step by step, with **Back** and **Next**. You can skip a step
+and come back; the last step lists anything still missing.
+
+Notes:
+- Something wrong is shown in red right next to the question, in plain words.
+- Unsaved edits survive reloading the page, but not closing the tab. Save first.
+- If the plan was changed somewhere else after you loaded it, the page won't overwrite
+  it: it offers to download your version instead. Reload, then make the change again.
+- Saving needs a token with **Contents: Read and write** (see the setup guide). With a
+  read-only token the button says **Download plan.yaml** instead.
+
+## Editing the file directly (optional)
+
+The editor writes `plan.yaml` for us, but it is a plain text file and can be edited by hand
+on github.com (open it, click the **pencil**, then **Commit changes**). Notes typed into
+the file by hand are replaced the next time the page saves it.
+
+If the page finds a problem in the file, it lists it in a red box saying exactly what's
+wrong and where:
 
 > Jamie's salary: "growth" must be a percentage with a % sign, like 3% (got 0.03) [income.salaries[1].growth]
 
 The part in brackets is where it is in the file: here, the second salary's `growth` line.
 Yellow "warnings" don't stop the projection; they point out things that look like typos.
-
-**Tip:** to try a change without saving it, download `plan.yaml`, edit it on your computer,
-and use **Open local file…** on the page. Nothing is uploaded.
 
 ## The rules of the file
 
