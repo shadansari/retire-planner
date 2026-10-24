@@ -227,6 +227,11 @@ Every new schema field needs a validation rule and an invalid-fixture test.
   Contract-checked against the real Contents API (create/update/stale-sha refusal).
   When adding a schema field: validator rule + catalog entry (test fails otherwise) +
   serializer key order.
+  Ids (people/accounts) always follow names: renaming re-derives the id and `renameId`
+  moves every reference; the editor normalizes ids on open. A person's new first name is
+  replaced (whole word) in the names of accounts/pensions/part-time they own; on open,
+  names still carrying the old first name (= old id) are fixed as reviewable changes.
+  Tests and commit messages use only made-up names (never names from the real plan).
 - **Later**: Roth conversions, NIIT/IRMAA real, ACA, scenario comparison, Monte Carlo, CSV export.
 
 ## Testing

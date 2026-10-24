@@ -12,7 +12,7 @@
 import { h } from '../ui/dom.js';
 import {
   fromInput, toInput, readField, writeField, readAbs, writeAbs, listAt, addItem, removeItem,
-  removalEffects, duplicateItem, moveItem, syncId, itemPath,
+  removalEffects, duplicateItem, moveItem, syncId, itemPath, firstName, propagateFirstName,
 } from './model.js';
 import { TYPE_INFO } from './catalog.js';
 import { ACCOUNT_TYPES } from '../engine/validate.js';
@@ -213,9 +213,19 @@ export function renderItem(block, index, ctx, { onRemoved, onDuplicated, heading
   const path = itemPath(block.path, index);
   const fields = block.itemFields.map((f) => {
     const el = renderField(f, { item, path: `${path}.${f.key}` }, ctx);
-    // Keep the hidden id in step with the name while nothing refers to it.
+    // Keep the hidden id in step with the name (references follow).
     if (el && block.idFrom && f.key === block.idFrom) {
-      el.querySelector('input')?.addEventListener('input', () => syncId(ctx.raw, block.path, item));
+      const input = el.querySelector('input');
+      input?.addEventListener('input', () => syncId(ctx.raw, block.path, item));
+      // A person's new first name also replaces the old one in their account names.
+      if (block.path === 'people') {
+        let before = firstName(item.name);
+        input?.addEventListener('change', () => {
+          const now = firstName(item.name);
+          propagateFirstName(ctx.raw, item.id, before, now);
+          before = now;
+        });
+      }
     }
     return el;
   });

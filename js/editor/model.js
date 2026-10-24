@@ -103,10 +103,10 @@ export const writeAbs = (raw, field, value) => setIn(raw, field.key, value);
 
 // --- ids ---------------------------------------------------------------------------------------
 // People and accounts are referenced by id. Ids are derived from the name and hidden from
-// the user; an id is re-derived on rename only while nothing references it yet.
+// the user; renaming re-derives the id and updates every reference to it.
 
 export function slug(text, { first = false } = {}) {
-  let s = String(text ?? '').toLowerCase();
+  let s = String(text ?? '').toLowerCase().replace(/[()'’.]/g, ''); // "401(k)" → "401k"
   if (first) s = s.trim().split(/\s+/)[0] ?? '';
   s = s.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30);
   if (s && !/^[a-z]/.test(s)) s = `x_${s}`;
@@ -145,14 +145,71 @@ export function referencesTo(raw, kind, id) {
   return refs;
 }
 
-// After a name edit on a person/account: derive the id if it's unused elsewhere.
+// Point every reference at a new id.
+export function renameId(raw, path, oldId, newId) {
+  if (!oldId || oldId === newId) return;
+  if (path === 'people') {
+    for (const p of ['income.salaries', 'income.social_security', 'income.pensions', 'income.part_time', 'accounts']) {
+      for (const x of listAt(raw, p)) if (x?.owner === oldId) x.owner = newId;
+    }
+    return;
+  }
+  for (const s of listAt(raw, 'income.salaries')) {
+    for (const c of Array.isArray(s?.contributions) ? s.contributions : []) if (c?.account === oldId) c.account = newId;
+  }
+  const order = raw?.assumptions?.withdrawal_order;
+  if (Array.isArray(order)) raw.assumptions.withdrawal_order = order.map((x) => (x === oldId ? newId : x));
+  if (raw?.assumptions?.deposit_surplus_to === oldId) raw.assumptions.deposit_surplus_to = newId;
+}
+
+// After a name edit on a person/account: re-derive its id, carrying references along.
 export function syncId(raw, path, item) {
   if (path !== 'people' && path !== 'accounts') return;
-  const kind = path === 'people' ? 'person' : 'account';
-  if (item.id && referencesTo(raw, kind, item.id).length) return;
   const base = slug(item.name, { first: path === 'people' });
   if (!base) return;
-  item.id = uniqueId(raw, path, base, item);
+  const next = uniqueId(raw, path, base, item);
+  if (next === item.id) return;
+  renameId(raw, path, item.id, next);
+  item.id = next;
+}
+
+// Re-derive every person/account id from its name (used when the editor opens, so a
+// file written before names were real ends up with readable ids on its next save).
+export function normalizeIds(raw) {
+  for (const path of ['people', 'accounts']) for (const item of listAt(raw, path)) if (item?.name) syncId(raw, path, item);
+}
+
+export const firstName = (name) => String(name ?? '').trim().split(/\s+/)[0] ?? '';
+const escapeRe = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// A person's first name changed: replace the old one (whole word) in the names of the
+// accounts, pensions and part-time work they own. → number of names changed.
+export function propagateFirstName(raw, personId, oldFirst, newFirst) {
+  if (!personId || !oldFirst || !newFirst || oldFirst === newFirst) return 0;
+  const re = new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRe(oldFirst)}(?=$|[^\\p{L}\\p{N}])`, 'gu');
+  let n = 0;
+  for (const path of ['accounts', 'income.pensions', 'income.part_time']) {
+    for (const x of listAt(raw, path)) {
+      if (x?.owner !== personId || typeof x.name !== 'string') continue;
+      const next = x.name.replace(re, `$1${newFirst}`);
+      if (next !== x.name) { x.name = next; n++; }
+    }
+  }
+  return n;
+}
+
+// Names still carrying an old first name, recognizable because ids came from first
+// names: person id "alex" now named "Sam …" → "Alex 401(k)" (owned by them) becomes
+// "Sam 401(k)". → number of names changed.
+export function fixStaleNames(raw) {
+  let n = 0;
+  for (const p of listAt(raw, 'people')) {
+    if (!p?.id || !/^[a-z]+$/.test(p.id)) continue;
+    const old = p.id.charAt(0).toUpperCase() + p.id.slice(1);
+    const now = firstName(p.name);
+    if (now && now.toLowerCase() !== p.id) n += propagateFirstName(raw, p.id, old, now);
+  }
+  return n;
 }
 
 // --- add / duplicate / remove ----------------------------------------------------------------
@@ -288,6 +345,20 @@ const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 // → ["Alex 401(k): balance", "added expense \"Boat\"", …]
 export function changeSummary(before, after) {
   const out = [];
+  // Carry id renames (same position, new id) into a copy of `before`, so references that
+  // merely followed a rename don't show up as changes.
+  before = clone(before) ?? {};
+  for (const path of ['people', 'accounts']) {
+    const a = listAt(before, path);
+    const bIds = new Set(listAt(after, path).map((x) => x?.id));
+    listAt(after, path).forEach((x, i) => {
+      const old = a[i];
+      if (old?.id && x?.id && old.id !== x.id && !bIds.has(old.id) && !a.some((y) => y?.id === x.id)) {
+        renameId(before, path, old.id, x.id);
+        old.id = x.id;
+      }
+    });
+  }
   for (const section of SECTIONS) {
     for (const block of section.blocks) {
       if (block.kind === 'fields') {
@@ -298,9 +369,12 @@ export function changeSummary(before, after) {
       }
       const a = listAt(before, block.path);
       const b = listAt(after, block.path);
-      const key = (x, i) => (x?.id ? `id:${x.id}` : `i:${i}`);
-      const aMap = new Map(a.map((x, i) => [key(x, i), x]));
-      const bMap = new Map(b.map((x, i) => [key(x, i), x]));
+      // Match by id; an item whose id changed (renamed) matches the old one at its index.
+      const bIds = new Set(b.map((x) => x?.id).filter(Boolean));
+      const aIds = new Set(a.map((x) => x?.id).filter(Boolean));
+      const key = (x, i, otherIds) => (x?.id && otherIds.has(x.id) ? `id:${x.id}` : `i:${i}`);
+      const aMap = new Map(a.map((x, i) => [key(x, i, bIds), x]));
+      const bMap = new Map(b.map((x, i) => [key(x, i, aIds), x]));
       for (const [k, x] of bMap) {
         const old = aMap.get(k);
         const title = block.itemTitle(after, x);

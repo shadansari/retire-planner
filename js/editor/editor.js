@@ -6,7 +6,7 @@
 
 import { h } from '../ui/dom.js';
 import { validatePlan } from '../engine/validate.js';
-import { messagesByPath, changeSummary, clone } from './model.js';
+import { messagesByPath, changeSummary, clone, fixStaleNames, normalizeIds } from './model.js';
 import { renderWizard } from './wizard.js';
 import { renderBrowse } from './browse.js';
 import { SECTIONS } from './catalog.js';
@@ -185,13 +185,18 @@ export function createEditor(root, hooks) {
       st.fresh = fresh;
       st.furthest = furthest;
       st.touched = new Set(touched);
-      st.raw = raw;
       st.base = base ?? clone(raw);
+      // Account names still carrying an example first name get the person's real one
+      // (shown as unsaved changes to review), and ids are re-derived from names.
+      const renamed = fixStaleNames(raw);
+      normalizeIds(raw);
+      normalizeIds(st.base);
+      st.raw = raw;
       st.source = source;
       st.mode = mode;
       st.step = step;
       st.sel = { section: null, path: null, index: null };
-      st.status = '';
+      st.status = renamed ? `Renamed ${renamed} account or pension name${renamed === 1 ? '' : 's'} to match your names. Review, then save.` : '';
       revalidate();
       saveDraft();
       render();

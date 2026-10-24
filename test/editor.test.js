@@ -9,7 +9,9 @@ import { SECTIONS, LIST_BLOCKS } from '../js/editor/catalog.js';
 import {
   fromInput, toInput, setTiming, getTiming, slug, uniqueId, syncId, removeItem, removalEffects,
   duplicateItem, messagesByPath, changeSummary, commitMessage, blankPlan, clone, getIn, setIn, addItem,
+  normalizeIds, propagateFirstName, fixStaleNames,
 } from '../js/editor/model.js';
+import { simulate } from '../js/engine/simulate.js';
 
 const reload = (text) => loadYaml(text, { schema: CORE_SCHEMA });
 
@@ -81,9 +83,10 @@ test('expense timing switches between one-time and recurring', () => {
   assert.deepEqual(item, { name: 'Roof', amount: 1, year: 2029 });
 });
 
-test('ids are derived from names, unique, valid, and stable once referenced', () => {
+test('ids are derived from names, unique, valid, and carry references when renamed', () => {
   assert.equal(slug('Pat Lee', { first: true }), 'pat');
-  assert.equal(slug('Pat Lee 401(k)'), 'pat_lee_401_k');
+  assert.equal(slug('Pat Lee 401(k)'), 'pat_lee_401k');
+  assert.equal(slug("Pat's IRA"), 'pats_ira');
   assert.equal(slug('401k'), 'x_401k');
   const raw = exampleRaw();
   assert.equal(uniqueId(raw, 'people', 'alex'), 'alex_2');
@@ -92,12 +95,67 @@ test('ids are derived from names, unique, valid, and stable once referenced', ()
   raw.people.push(p);
   syncId(raw, 'people', p);
   assert.equal(p.id, 'robin');
-  p.name = 'Rob Doe';
-  syncId(raw, 'people', p);
-  assert.equal(p.id, 'rob'); // unreferenced: follows the name
-  raw.people[0].name = 'Alexander Sample';
+  // Renaming a referenced person moves every reference to the new id.
+  raw.people[0].name = 'Sam Sample';
   syncId(raw, 'people', raw.people[0]);
-  assert.equal(raw.people[0].id, 'alex'); // referenced: kept
+  assert.equal(raw.people[0].id, 'sam');
+  assert.equal(raw.income.salaries[0].owner, 'sam');
+  assert.equal(raw.accounts.find((a) => a.name === 'Alex 401(k)').owner, 'sam');
+  // Same for accounts: contributions, withdrawal order, surplus target.
+  const sav = raw.accounts.find((a) => a.id === 'savings');
+  sav.name = 'Emergency fund';
+  syncId(raw, 'accounts', sav);
+  assert.equal(sav.id, 'emergency_fund');
+  assert.equal(raw.assumptions.withdrawal_order[0], 'emergency_fund');
+  const k = raw.accounts.find((a) => a.id === 'alex_401k');
+  k.name = 'Sam 401(k)';
+  syncId(raw, 'accounts', k);
+  assert.equal(raw.income.salaries[0].contributions[0].account, 'sam_401k');
+  raw.people.pop();
+  assert.deepEqual(validatePlan(raw).errors, []);
+});
+
+test('normalizing ids changes nothing the engine sees', () => {
+  const raw = exampleRaw();
+  normalizeIds(raw);
+  assert.deepEqual(raw.people.map((p) => p.id), ['alex', 'jamie']);
+  assert.deepEqual(raw.accounts.map((a) => a.id),
+    ['alex_401k', 'jamie_roth_401k', 'jamie_ira', 'joint_brokerage', 'alex_hsa', 'high_yield_savings']);
+  assert.equal(raw.assumptions.deposit_surplus_to, 'joint_brokerage');
+  const before = validatePlan(exampleRaw()).plan;
+  const after = validatePlan(raw).plan;
+  assert.deepEqual(simulate(after).summary, simulate(before).summary);
+  normalizeIds(raw);
+  assert.deepEqual(raw.accounts.map((a) => a.id)[5], 'high_yield_savings'); // idempotent
+});
+
+test('a new first name replaces the old one (whole word) in that person\'s names', () => {
+  const raw = exampleRaw();
+  raw.accounts.push({ id: 'x', name: "Alexander's IRA", owner: 'alex', type: 'roth', balance: 1, return: '5%' });
+  raw.income.part_time[0].name = 'Alex consulting';
+  assert.equal(propagateFirstName(raw, 'alex', 'Alex', 'Sam'), 3);
+  assert.deepEqual(raw.accounts.map((a) => a.name),
+    ['Sam 401(k)', 'Jamie Roth 401(k)', 'Jamie IRA', 'Joint brokerage', 'Sam HSA', 'High-yield savings', "Alexander's IRA"]);
+  assert.equal(raw.income.part_time[0].name, 'Sam consulting');
+});
+
+test('names left over from before a rename are fixed when the editor opens', () => {
+  const raw = exampleRaw();
+  raw.people[0].name = 'Sam Real';
+  raw.people[1].name = 'Riley Real';
+  assert.equal(fixStaleNames(raw), 4);
+  assert.deepEqual(raw.accounts.map((a) => a.name),
+    ['Sam 401(k)', 'Riley Roth 401(k)', 'Riley IRA', 'Joint brokerage', 'Sam HSA', 'High-yield savings']);
+  assert.equal(fixStaleNames(raw), 0);
+  assert.equal(fixStaleNames(exampleRaw()), 0); // names already match ids
+});
+
+test('change summary follows a renamed (re-id\'d) entry instead of add + remove', () => {
+  const before = exampleRaw();
+  const after = clone(before);
+  after.accounts[0].name = 'Sam 401(k)';
+  syncId(after, 'accounts', after.accounts[0]);
+  assert.deepEqual(changeSummary(before, after), ['Sam 401(k): account name']);
 });
 
 test('removing an account removes what points at it', () => {
@@ -131,7 +189,7 @@ test('duplicate makes a fresh id and name', () => {
   const raw = exampleRaw();
   const j = duplicateItem(raw, 'accounts', 0);
   assert.equal(raw.accounts[j].name, 'Alex 401(k) (copy)');
-  assert.equal(raw.accounts[j].id, 'alex_401_k_copy');
+  assert.equal(raw.accounts[j].id, 'alex_401k_copy');
 });
 
 test('validation messages map to field paths in plain words', () => {
