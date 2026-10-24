@@ -4,8 +4,8 @@ import { parsePlanText } from './data/load.js';
 import { validatePlan } from './engine/validate.js';
 import { createEditor, loadDraft, clearDraft } from './editor/editor.js';
 import { serializePlan } from './editor/serialize.js';
-import { blankPlan, clone } from './editor/model.js';
-import { fetchPlanText, scrub } from './data/github.js';
+import { blankPlan, clone, commitMessage } from './editor/model.js';
+import { fetchPlanText, scrub, gitBlobSha, savePlanText, fetchFileSha } from './data/github.js';
 import { simulate } from './engine/simulate.js';
 import { h } from './ui/dom.js';
 import { renderSummary } from './ui/summary.js';
@@ -129,7 +129,7 @@ const editor = createEditor($('editor'), {
       : { label: state.source?.label ?? 'your plan', reload: state.source?.kind === 'github' ? loadFromGitHub : null });
   },
   onSave: savePlan,
-  saveLabel: () => 'Download plan.yaml',
+  saveLabel: () => (saveTarget() ? 'Save to GitHub' : 'Download plan.yaml'),
 });
 
 function showEditor(on) {
@@ -152,16 +152,50 @@ function startNewPlan() {
   window.scrollTo(0, 0);
 }
 
-// Save = download for now; saving to GitHub comes with a write-enabled token.
-async function savePlan(raw) {
-  const text = serializePlan(raw);
+// Where Save goes: the GitHub file the plan came from, or (for a new/demo/local plan)
+// the GitHub location in the form, when a token is in hand. Otherwise: download.
+function saveTarget() {
+  if (!token) return null;
+  if (state.source?.kind === 'github') return state.source.loc;
+  const loc = readLocation();
+  return loc.owner && loc.repo && loc.path ? loc : null;
+}
+
+function download(text) {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/yaml' }));
   const a = h('a', { href: url, download: 'plan.yaml' });
   document.body.append(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  return 'Downloaded plan.yaml. Upload it to your plan repository on GitHub to keep it.';
+}
+
+// → status text for the editor. Throws (with a friendly message) if nothing was saved.
+async function savePlan(raw, changes) {
+  const text = serializePlan(raw);
+  const loc = saveTarget();
+  if (!loc) {
+    download(text);
+    return 'Downloaded plan.yaml. Upload it to your plan repository on GitHub to keep it.';
+  }
+  const where = `${loc.owner}/${loc.repo}/${loc.path}`;
+  try {
+    let sha = state.source?.kind === 'github' ? state.source.sha : undefined;
+    if (sha === undefined) {
+      if (!window.confirm(`Save this plan to ${where} on GitHub, replacing what is there now? (Earlier versions stay in GitHub's history.)`)) {
+        throw new Error('Not saved.');
+      }
+      sha = await fetchFileSha({ ...loc, token });
+    }
+    const newSha = await savePlanText({ ...loc, token, text, sha, message: commitMessage(changes) });
+    state.source = { kind: 'github', label: `${where} (from GitHub)`, loc, sha: newSha };
+    state.raw = clone(raw);
+    return `Saved to GitHub (${where}).`;
+  } catch (e) {
+    const msg = scrub(e.message, token);
+    if (msg !== 'Not saved.' && window.confirm(`${msg}\n\nDownload your edited plan.yaml instead, so nothing is lost?`)) download(text);
+    throw new Error(msg);
+  }
 }
 
 // --- GitHub connection ------------------------------------------------------------
@@ -192,7 +226,8 @@ async function loadFromGitHub() {
     // Remember only a token GitHub accepted, and only if asked.
     if ($('gh-remember').checked) store('sessionStorage', (s) => s.setItem(TOKEN_KEY, token));
     else store('sessionStorage', (s) => s.removeItem(TOKEN_KEY));
-    await loadText(text, { kind: 'github', label: `${loc.owner}/${loc.repo}/${loc.path} (from GitHub)`, loc }, { reload: loadFromGitHub });
+    const sha = await gitBlobSha(text); // version id, so a save can't overwrite newer edits
+    await loadText(text, { kind: 'github', label: `${loc.owner}/${loc.repo}/${loc.path} (from GitHub)`, loc, sha }, { reload: loadFromGitHub });
     showTokenStatus();
   } catch (e) {
     showTokenStatus('');

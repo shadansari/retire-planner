@@ -114,8 +114,7 @@ export function createEditor(root, hooks) {
       st.status = msg || 'Saved.';
       saveDraft();
     } catch (e) {
-      st.status = '';
-      window.alert(e.message);
+      st.status = e.message === 'Not saved.' ? '' : `Not saved: ${e.message}`;
     }
     render();
   }
