@@ -66,7 +66,8 @@ test('input encoding', () => {
   assert.equal(fromInput('month', '2032-06'), '2032-06');
   assert.equal(fromInput('bool', false), false);
   assert.equal(toInput('percent', '6%'), '6');
-  assert.equal(toInput('money', 150000), '150000');
+  assert.equal(toInput('money', 150000), '150,000');
+  assert.equal(fromInput('money', toInput('money', 1234567.5)), 1234567.5);
   assert.equal(toInput('money', undefined), '');
 });
 

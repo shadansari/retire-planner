@@ -3,7 +3,7 @@
 import { load as loadYaml, CORE_SCHEMA } from '../../vendor/js-yaml.mjs';
 import { validatePlan } from '../engine/validate.js';
 
-// → { errors, warnings, plan }
+// → { errors, warnings, plan, raw } (raw: the parsed YAML, undefined if it didn't parse)
 export function parsePlanText(text) {
   let raw;
   try {
@@ -17,7 +17,8 @@ export function parsePlanText(text) {
       errors: [`The file couldn't be read${line}: ${reason}. Check indentation (spaces, not tabs) and that each "key: value" has a space after the colon.${snippet}`],
       warnings: [],
       plan: null,
+      raw: undefined,
     };
   }
-  return validatePlan(raw);
+  return { ...validatePlan(raw), raw };
 }

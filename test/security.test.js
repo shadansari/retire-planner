@@ -49,3 +49,8 @@ test('YAML __proto__ keys do not pollute prototypes', () => {
   parsePlanText('__proto__:\n  polluted: yes\nschema_version: 1\n');
   assert.equal(({}).polluted, undefined);
 });
+
+test('plan editor keeps drafts out of localStorage (sessionStorage only)', () => {
+  for (const f of jsFiles('js/editor')) assert.ok(!/localStorage\s*[.[]|['"]localStorage['"]/.test(read(f)), f);
+  assert.match(read('js/editor/editor.js'), /window\.sessionStorage/);
+});

@@ -123,7 +123,7 @@ export const SECTIONS = [
           options: (raw, a) => personOptions(raw, { joint: ['cash', 'taxable'].includes(a?.type) }),
           why: 'Retirement accounts belong to one person (it matters for age 59½ and required withdrawals). Cash and brokerage accounts can be joint.',
         },
-        { key: 'balance', label: 'Balance', kind: 'money', required: true, where: 'Your latest statement, on the "as of" month above.' },
+        { key: 'balance', label: 'Balance', kind: 'money', required: true, where: 'Your latest statement, from the month under "Balances are as of".' },
         {
           key: 'return', label: 'Expected yearly return', kind: 'percent', required: true,
           why: 'Before inflation, after fees. Small differences compound over decades, so lean conservative.',

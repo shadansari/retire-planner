@@ -1,6 +1,10 @@
 // Entry point: wiring only. Loading → validation → simulate → render.
 
 import { parsePlanText } from './data/load.js';
+import { validatePlan } from './engine/validate.js';
+import { createEditor, loadDraft, clearDraft } from './editor/editor.js';
+import { serializePlan } from './editor/serialize.js';
+import { blankPlan, clone } from './editor/model.js';
 import { fetchPlanText, scrub } from './data/github.js';
 import { simulate } from './engine/simulate.js';
 import { h } from './ui/dom.js';
@@ -16,7 +20,11 @@ if (window.top !== window.self) {
 }
 
 const $ = (id) => document.getElementById(id);
-const state = { plan: null, result: null, mode: 'real', taxTables: null };
+const state = {
+  plan: null, result: null, mode: 'real', taxTables: null,
+  raw: null, // the loaded file as parsed YAML (what the editor edits)
+  source: null, // { kind: 'github'|'demo'|'file'|'new', label, loc?, sha? }
+};
 
 const getJson = async (path) => {
   const res = await fetch(path, { cache: 'no-cache' });
@@ -56,16 +64,27 @@ function render() {
   renderTable($('table'), $('table-note'), plan, result, mode);
 }
 
-// Returns true if the plan rendered.
-async function loadText(text, sourceLabel, { reload = false } = {}) {
-  const { errors, warnings, plan } = parsePlanText(text);
+// Show a validated plan: messages, results, and the source line with its actions.
+// Returns true if the projection rendered.
+async function showPlan({ errors, warnings, plan }, { label, reload = null, preview = false }) {
+  showEditor(false);
+  const actions = [];
+  if (preview) {
+    actions.push(['Back to editing', () => showEditor(true)], ['Save', () => { showEditor(true); $('editor-save')?.click(); }]);
+  } else {
+    if (reload) actions.push(['Reload', reload]);
+    if (state.raw && typeof state.raw === 'object') actions.push(['Edit plan', () => openEditor()]);
+  }
   $('source').hidden = false;
   // replaceChildren stringifies null, so only pass real nodes.
-  $('source').replaceChildren(`Loaded: ${sourceLabel}`,
-    ...(reload ? [h('button', { type: 'button', id: 'reload' }, 'Reload')] : []));
-  if (reload) $('reload').addEventListener('click', loadFromGitHub);
+  $('source').replaceChildren(preview ? h('strong', {}, label) : `Loaded: ${label}`, ...actions.map(([text, fn]) => {
+    const b = h('button', { type: 'button' }, text);
+    b.addEventListener('click', fn);
+    return b;
+  }));
+  $('source').classList.toggle('preview', preview);
   $('empty').hidden = true;
-  showMessages($('errors'), `The plan file has ${errors.length === 1 ? 'a problem' : `${errors.length} problems`} to fix`, errors);
+  showMessages($('errors'), `The plan ${preview ? 'still' : 'file'} has ${errors.length === 1 ? 'a problem' : `${errors.length} problems`} to fix${state.raw ? ' (use Edit plan)' : ''}`, errors);
   showMessages($('warnings'), errors.length ? 'Also worth checking' : 'Warnings (the projection still ran)', warnings);
   if (errors.length) {
     state.plan = null;
@@ -90,6 +109,59 @@ async function loadText(text, sourceLabel, { reload = false } = {}) {
   render();
   $('connect-wrap').open = false;
   return true;
+}
+
+// Load plan text from a source and show it.
+async function loadText(text, source, { reload = null } = {}) {
+  const parsed = parsePlanText(text);
+  state.raw = parsed.raw && typeof parsed.raw === 'object' ? parsed.raw : null;
+  state.source = source;
+  return showPlan(parsed, { label: source.label, reload });
+}
+
+// --- plan editor --------------------------------------------------------------------------
+const editor = createEditor($('editor'), {
+  onPreview: (raw) => showPlan(validatePlan(raw), { label: 'Preview including unsaved changes', preview: true }),
+  onClose: () => {
+    state.raw = clone(editor.raw);
+    showPlan(validatePlan(editor.raw), editor.dirty
+      ? { label: 'Showing your unsaved changes', preview: true }
+      : { label: state.source?.label ?? 'your plan', reload: state.source?.kind === 'github' ? loadFromGitHub : null });
+  },
+  onSave: savePlan,
+  saveLabel: () => 'Download plan.yaml',
+});
+
+function showEditor(on) {
+  $('editor').hidden = !on;
+  $('connect-wrap').hidden = on;
+  if (on) for (const id of ['source', 'errors', 'warnings', 'results', 'empty']) $(id).hidden = true;
+}
+
+function openEditor({ raw = state.raw, mode = 'browse', step = 0 } = {}) {
+  editor.open({ raw: clone(raw), base: clone(raw), source: state.source, mode, step });
+  showEditor(true);
+  window.scrollTo(0, 0);
+}
+
+function startNewPlan() {
+  const now = new Date();
+  state.source = { kind: 'new', label: 'new plan (not saved yet)' };
+  editor.open({ raw: blankPlan({ year: now.getFullYear(), month: now.getMonth() + 1 }), base: {}, source: state.source, mode: 'wizard', fresh: true });
+  showEditor(true);
+  window.scrollTo(0, 0);
+}
+
+// Save = download for now; saving to GitHub comes with a write-enabled token.
+async function savePlan(raw) {
+  const text = serializePlan(raw);
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/yaml' }));
+  const a = h('a', { href: url, download: 'plan.yaml' });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return 'Downloaded plan.yaml. Upload it to your plan repository on GitHub to keep it.';
 }
 
 // --- GitHub connection ------------------------------------------------------------
@@ -120,7 +192,7 @@ async function loadFromGitHub() {
     // Remember only a token GitHub accepted, and only if asked.
     if ($('gh-remember').checked) store('sessionStorage', (s) => s.setItem(TOKEN_KEY, token));
     else store('sessionStorage', (s) => s.removeItem(TOKEN_KEY));
-    await loadText(text, `${loc.owner}/${loc.repo}/${loc.path} (from GitHub)`, { reload: true });
+    await loadText(text, { kind: 'github', label: `${loc.owner}/${loc.repo}/${loc.path} (from GitHub)`, loc }, { reload: loadFromGitHub });
     showTokenStatus();
   } catch (e) {
     showTokenStatus('');
@@ -159,7 +231,7 @@ async function loadDemo() {
   try {
     const res = await fetch('examples/example.yaml', { cache: 'no-cache' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    await loadText(await res.text(), 'demo plan (made-up example data)');
+    await loadText(await res.text(), { kind: 'demo', label: 'demo plan (made-up example data)' });
   } catch (e) {
     showMessages($('errors'), "Couldn't load the demo", [String(e.message)]);
   }
@@ -169,7 +241,7 @@ $('load-demo').addEventListener('click', loadDemo);
 
 $('load-file').addEventListener('change', async (e) => {
   const file = e.target.files[0];
-  if (file) await loadText(await file.text(), `${file.name} (local file, not uploaded anywhere)`);
+  if (file) await loadText(await file.text(), { kind: 'file', label: `${file.name} (local file, not uploaded anywhere)` });
   e.target.value = '';
 });
 
@@ -188,5 +260,31 @@ new ResizeObserver(([entry]) => {
   }
 }).observe($('chart'));
 
-if (new URLSearchParams(location.search).has('demo')) loadDemo();
-else if (token && savedLoc) loadFromGitHub(); // tab reload with a remembered token
+$('new-plan').addEventListener('click', startNewPlan);
+
+// Unsaved edits from earlier in this tab: offer to resume before loading anything.
+const draft = loadDraft();
+function offerDraft() {
+  const resume = h('button', { type: 'button' }, 'Resume editing');
+  const discard = h('button', { type: 'button' }, 'Discard them');
+  resume.addEventListener('click', () => {
+    state.source = draft.source;
+    editor.open(draft);
+    showEditor(true);
+  });
+  discard.addEventListener('click', () => {
+    clearDraft();
+    $('source').hidden = true;
+    startup();
+  });
+  $('source').hidden = false;
+  $('source').replaceChildren('You have unsaved plan edits from earlier in this tab. ', resume, discard);
+}
+
+function startup() {
+  if (new URLSearchParams(location.search).has('demo')) loadDemo();
+  else if (token && savedLoc) loadFromGitHub(); // tab reload with a remembered token
+}
+
+if (draft?.raw && JSON.stringify(draft.raw) !== JSON.stringify(draft.base)) offerDraft();
+else startup();

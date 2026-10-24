@@ -64,6 +64,7 @@ export function toInput(kind, value) {
   if (value == null) return kind === 'bool' ? false : '';
   if (kind === 'bool') return value === true;
   if (kind === 'percent' && typeof value === 'string') return pctNumber(value);
+  if ((kind === 'money' || kind === 'percentOrMoney') && typeof value === 'number') return value.toLocaleString('en-US', { maximumFractionDigits: 2 });
   return String(value);
 }
 
